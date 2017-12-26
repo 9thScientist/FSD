@@ -1,15 +1,19 @@
-import java.lang.reflect.Array;
+import interfaces.Bank;
+import interfaces.Cart;
+import interfaces.Sale;
+import interfaces.Store;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Store {
+public class StoreImpl implements Store {
     private Map<Integer, Book> collection = new HashMap<>();
     private ArrayList<Sale> history = new ArrayList<>();
     private int storeAccount;
 
-    Store(Bank b) {
+    StoreImpl(Bank b) {
         storeAccount = b.newAccount(1000);
 
         collection.put(1, new Book(1, 5, "Lev Tolstoy", "The Death of Ivan Ilyich"));
@@ -31,7 +35,7 @@ public class Store {
         return (List<Sale>) history.clone();
     }
 
-    public class Cart {
+    public class CartImpl implements Cart {
         private List<Book> wishes = new ArrayList<>();
 
         public void add(Book b) {
@@ -46,7 +50,7 @@ public class Store {
         }
 
         public void buy(Bank bank, int clientAcc) {
-            Sale s = new Sale(wishes);
+            SaleImpl s = new SaleImpl(wishes);
 
             history.add(s);
 
@@ -57,11 +61,11 @@ public class Store {
         }
     }
 
-    public class Sale {
+    public class SaleImpl implements Sale {
         private List<Book> sold;
         private boolean paid;
 
-        public Sale(List<Book> sold) {
+        public SaleImpl(List<Book> sold) {
             this.paid = false;
             this.sold = new ArrayList<>();
 

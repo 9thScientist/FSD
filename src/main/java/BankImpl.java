@@ -1,3 +1,6 @@
+import interfaces.Account;
+import interfaces.Bank;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -5,29 +8,29 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class Bank {
-    private Map<Integer, Account> accounts = new HashMap<>();
+public class BankImpl implements Bank {
+    private Map<Integer, AccountImpl> accounts = new HashMap<>();
     private AtomicInteger id = new AtomicInteger(0);
 
-    public CompletableFuture<Void> transfer(int fromId, int toId, int amount) {
+    public CompletableFuture<Boolean> transfer(int fromId, int toId, int amount) {
         // async para que a livraria não dependa do banco
-        CompletableFuture<Void> r = new CompletableFuture<>();
+        CompletableFuture<Boolean> r = new CompletableFuture<>();
 
         CompletableFuture.runAsync(() -> {
             // Falta locks por todo o lado. Temos mesmo de os por? :'(
-            Account from = accounts.get(fromId);
-            Account to = accounts.get(toId);
+            AccountImpl from = accounts.get(fromId);
+            AccountImpl to = accounts.get(toId);
 
             from.debit(amount);
             to.credit(amount);
-            r.complete(null);
+            r.complete(true);
         });
 
         return r;
     }
 
     public int newAccount(int initialBalance) {
-        Account acc = new Account(initialBalance);
+        AccountImpl acc = new AccountImpl(initialBalance);
         int accId = id.getAndIncrement();
 
         accounts.put(accId, acc);
@@ -37,15 +40,15 @@ public class Bank {
     }
 
     public List<Integer> getTransactions(int accId) {
-        Account acc = accounts.get(accId);
+        AccountImpl acc = accounts.get(accId);
         return (List<Integer>) acc.transactions.clone();
     }
 
-    private class Account {
+    private class AccountImpl implements Account {
         private int balance;
         private ArrayList<Integer> transactions = new ArrayList<>();
 
-        Account(int balance) {
+        AccountImpl(int balance) {
             this.balance = balance;
         }
 
