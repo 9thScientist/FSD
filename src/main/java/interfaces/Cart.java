@@ -1,6 +1,6 @@
 package interfaces;
 
-import interfaces.Bank;
+import business.Book;
 
 public interface Cart {
     void add(Book b);

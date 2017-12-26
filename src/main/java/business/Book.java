@@ -1,3 +1,5 @@
+package business;
+
 public class Book {
     private int isbn, price;
     private String author, title;
