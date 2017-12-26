@@ -14,36 +14,12 @@ public class BankImpl implements Bank {
     private Map<Integer, AccountImpl> accounts = new HashMap<>();
     private AtomicInteger id = new AtomicInteger(0);
 
-    public CompletableFuture<Boolean> transfer(int fromId, int toId, int amount) {
-        // async para que a livraria não dependa do banco
-        CompletableFuture<Boolean> r = new CompletableFuture<>();
-
-        CompletableFuture.runAsync(() -> {
-            // Falta locks por todo o lado. Temos mesmo de os por? :'(
-            AccountImpl from = accounts.get(fromId);
-            AccountImpl to = accounts.get(toId);
-
-            from.debit(amount);
-            to.credit(amount);
-            r.complete(true);
-        });
-
-        return r;
-    }
-
-    public int newAccount(int initialBalance) {
+    public Account newAccount(int initialBalance) {
         AccountImpl acc = new AccountImpl(initialBalance);
-        int accId = id.getAndIncrement();
 
-        accounts.put(accId, acc);
+        accounts.put(id.getAndIncrement(), acc);
 
-        // Retorno o id porque sendo uma aplicação diferente não me parece bem passar a referência.
-        return accId;
-    }
-
-    public List<Integer> getTransactions(int accId) {
-        AccountImpl acc = accounts.get(accId);
-        return (List<Integer>) acc.transactions.clone();
+        return acc;
     }
 
     private class AccountImpl implements Account {
@@ -52,6 +28,24 @@ public class BankImpl implements Bank {
 
         AccountImpl(int balance) {
             this.balance = balance;
+        }
+
+        public CompletableFuture<Boolean> transfer(Account to, int amount) {
+            // async para que a livraria não dependa do banco
+            CompletableFuture<Boolean> r = new CompletableFuture<>();
+
+            CompletableFuture.runAsync(() -> {
+                // Falta locks por todo o lado. Temos mesmo de os por? :'(
+                debit(amount);
+                to.credit(amount);
+                r.complete(true);
+            });
+
+            return r;
+        }
+
+        public List<Integer> getTransactions() {
+            return (List<Integer>) transactions.clone();
         }
 
         public synchronized void debit(int amount) {

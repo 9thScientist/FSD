@@ -1,9 +1,10 @@
 package business;
 
-import interfaces.Bank;
-import interfaces.Cart;
-import interfaces.Sale;
-import interfaces.Store;
+import interfaces.*;
+import io.atomix.catalyst.buffer.BufferInput;
+import io.atomix.catalyst.buffer.BufferOutput;
+import io.atomix.catalyst.serializer.CatalystSerializable;
+import io.atomix.catalyst.serializer.Serializer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,7 +14,7 @@ import java.util.Map;
 public class StoreImpl implements Store {
     private Map<Integer, Book> collection = new HashMap<>();
     private ArrayList<Sale> history = new ArrayList<>();
-    private int storeAccount;
+    private Account storeAccount;
 
     StoreImpl(Bank b) {
         storeAccount = b.newAccount(1000);
@@ -37,6 +38,10 @@ public class StoreImpl implements Store {
         return (List<Sale>) history.clone();
     }
 
+    public Cart newCart() {
+        return new CartImpl();
+    }
+
     public class CartImpl implements Cart {
         private List<Book> wishes = new ArrayList<>();
 
@@ -44,27 +49,27 @@ public class StoreImpl implements Store {
             wishes.add(b);
         }
 
-        public int value() {
+        private int value() {
             return wishes
                 .stream()
                 .map(Book::getPrice)
                 .reduce(0, (acc, price) -> acc + price);
         }
 
-        public void buy(Bank bank, int clientAcc) {
+        public void buy(Account client) {
             SaleImpl s = new SaleImpl(wishes);
 
             history.add(s);
 
-            bank.transfer(clientAcc, storeAccount, value())
-                .thenRun(() -> s.setPaid());
+            client.transfer(storeAccount, value());
+            s.setPaid();
 
             wishes.clear();
         }
     }
 
-    public class SaleImpl implements Sale {
-        private List<Book> sold;
+    public class SaleImpl implements Sale, CatalystSerializable {
+        private ArrayList<Book> sold;
         private boolean paid;
 
         public SaleImpl(List<Book> sold) {
@@ -77,6 +82,26 @@ public class StoreImpl implements Store {
 
         private void setPaid() {
             paid = true;
+        }
+
+        public List<Book> getSold() {
+            return (List<Book>) sold.clone();
+        }
+
+        public boolean isPaid() {
+            return paid;
+        }
+
+        @Override
+        public void writeObject(BufferOutput<?> bufferOutput, Serializer serializer) {
+            serializer.writeObject(sold);
+            bufferOutput.writeBoolean(paid);
+        }
+
+        @Override
+        public void readObject(BufferInput<?> bufferInput, Serializer serializer) {
+            sold = serializer.readObject(bufferInput);
+            paid = bufferInput.readBoolean();
         }
     }
 }
