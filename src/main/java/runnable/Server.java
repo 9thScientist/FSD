@@ -6,6 +6,9 @@ import io.atomix.catalyst.serializer.Serializer;
 import io.atomix.catalyst.transport.Address;
 import io.atomix.catalyst.transport.Transport;
 import io.atomix.catalyst.transport.netty.NettyTransport;
+import org.graalvm.compiler.nodes.java.RegisterFinalizerNode;
+import rmi.DistributedObject;
+import rmi.Reference;
 
 public class Server {
     public static void main(String[] args) {
@@ -13,17 +16,21 @@ public class Server {
         ThreadContext tc = new SingleThreadContext("srv-%d", new Serializer());
 
         Address address = new Address(":" + Integer.parseInt(args[0]));
-        // DistributedObject d = new DistributedObject(address);
 
-        registMessages();
+        registMessages(tc);
         assignHandlers(t, tc, address);
 
         System.out.println("Server ready on " + address.toString() + ".");
     }
 
     private static void assignHandlers(Transport t, ThreadContext tc, Address address) {
+        tc.execute(()-> {
+            t.server().listen(address, (c)-> {
+            });
+        });
     }
 
-    private static void registMessages() {
+    private static void registMessages(ThreadContext tc) {
+        tc.serializer().register(Reference.class);
     }
 }
