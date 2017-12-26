@@ -22,8 +22,8 @@ public class DistributedObject {
         ).join().get();
 
         return remoteType
-               .getDeclaredConstructor(tc.getClass(), c.getClass(), Integer.class)
-               .newInstance(tc, c, ref.getId());
+               .getDeclaredConstructor(tc.getClass(), c.getClass(), Integer.class, Reference.class)
+               .newInstance(tc, c, ref.getId(), ref);
     }
 
     public static <T> Reference<T> exportObject(Address address, int id, Class<T> interfce) {
