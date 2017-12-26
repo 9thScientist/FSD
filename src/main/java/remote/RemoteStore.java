@@ -3,6 +3,7 @@ package remote;
 import business.Book;
 import com.*;
 import interfaces.Cart;
+import interfaces.Sale;
 import interfaces.Store;
 import io.atomix.catalyst.concurrent.ThreadContext;
 import io.atomix.catalyst.transport.Connection;
