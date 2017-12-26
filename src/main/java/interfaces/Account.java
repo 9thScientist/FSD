@@ -6,5 +6,5 @@ public interface Account {
     void credit(int amount);
     void debit(int amount);
     List<Integer> getTransactions();
-    CompletableFuture<Boolean> transfer(Account to, int amount);
+    boolean transfer(Account to, int amount);
 }

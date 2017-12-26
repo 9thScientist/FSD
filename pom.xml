@@ -19,6 +19,13 @@
             </plugin>
         </plugins>
     </build>
+    <dependencies>
+        <dependency>
+            <groupId>io.atomix.catalyst</groupId>
+            <artifactId>catalyst-serializer</artifactId>
+            <version>1.2.1</version>
+        </dependency>
+    </dependencies>
 
 
     <dependencies>

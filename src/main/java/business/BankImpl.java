@@ -30,18 +30,11 @@ public class BankImpl implements Bank {
             this.balance = balance;
         }
 
-        public CompletableFuture<Boolean> transfer(Account to, int amount) {
-            // async para que a livraria não dependa do banco
-            CompletableFuture<Boolean> r = new CompletableFuture<>();
+        public boolean transfer(Account to, int amount) {
+            debit(amount);
+            to.credit(amount);
 
-            CompletableFuture.runAsync(() -> {
-                // Falta locks por todo o lado. Temos mesmo de os por? :'(
-                debit(amount);
-                to.credit(amount);
-                r.complete(true);
-            });
-
-            return r;
+            return true;
         }
 
         public List<Integer> getTransactions() {
