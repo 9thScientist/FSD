@@ -23,7 +23,7 @@ public class StoreImpl implements Store {
         collection.put(2, new Book(2, 10, "Haruki Murakami", "Kafka on the Shore"));
         collection.put(3, new Book(3, 15, "John Steinbeck", "East of Eden"));
         collection.put(4, new Book(4, 20, "Daniel Keys", "Flowers for Algernon"));
-        collection.put(5, new Book(5, 25, "Markus Zusak", "The Book Thief"));
+        collection.put(5, new Book(5, 25, "Markus Zusak", "The buisness.Book Thief"));
     }
 
     public Book search(String title) {
@@ -57,7 +57,7 @@ public class StoreImpl implements Store {
         }
 
         public void buy(Account client) {
-            Sale s = new Sale(wishes);
+            SaleImpl s = new SaleImpl(wishes);
 
             history.add(s);
 
@@ -68,11 +68,11 @@ public class StoreImpl implements Store {
         }
     }
 
-    public class Sale implements CatalystSerializable {
+    public class SaleImpl implements Sale, CatalystSerializable {
         private ArrayList<Book> sold;
         private boolean paid;
 
-        public Sale(List<Book> sold) {
+        public SaleImpl(List<Book> sold) {
             this.paid = false;
             this.sold = new ArrayList<>();
 
