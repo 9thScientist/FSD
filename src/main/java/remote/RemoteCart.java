@@ -10,10 +10,11 @@ import interfaces.Cart;
 import interfaces.Sale;
 import io.atomix.catalyst.concurrent.ThreadContext;
 import io.atomix.catalyst.transport.Connection;
+import rmi.DistributedObject;
 import rmi.Reference;
 
 public class RemoteCart extends Remote implements Cart {
-    public RemoteCart(ThreadContext tc, Connection c, int id, Reference reference) {
+    public RemoteCart(ThreadContext tc, Connection c, Integer id, Reference reference) {
         super(tc, c, id, reference);
     }
 
@@ -26,25 +27,29 @@ public class RemoteCart extends Remote implements Cart {
 
             return;
         } catch(Exception e) {
+            e.printStackTrace();
             return;
         }
     }
 
     @Override
-    public Sale buy(Account bankAcc) {
+    public Sale buy(Account from) {
         try {
+            Reference ref = ((RemoteAccount) from).getReference();
             CartBuyRep r = (CartBuyRep) tc.execute(() ->
-                c.sendAndReceive(new CartBuyReq())
+                c.sendAndReceive(new CartBuyReq(ref, id))
             ).join().get();
 
-            return r.getSale();
+            return DistributedObject.importObject(r.getSale());
         } catch(Exception e) {
+            e.printStackTrace();
             return null;
         }
     }
 
     @Override
     public void registerMessages() {
+        tc.serializer().register(Reference.class);
         tc.serializer().register(CartAddReq.class);
         tc.serializer().register(CartAddRep.class);
         tc.serializer().register(CartBuyReq.class);

@@ -10,7 +10,7 @@ import rmi.Reference;
 public class AccountGetTransactionsReq implements CatalystSerializable {
     private int accountId;
 
-    public AccountGetTransactionsReq() {
+    private AccountGetTransactionsReq() {
     }
 
     public AccountGetTransactionsReq(int accountId) {

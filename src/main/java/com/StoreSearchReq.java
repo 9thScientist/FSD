@@ -9,7 +9,7 @@ public class StoreSearchReq implements CatalystSerializable {
     private String title;
     private int storeId;
 
-    public StoreSearchReq() {
+    private StoreSearchReq() {
     }
 
     public StoreSearchReq(String title, int storeId) {

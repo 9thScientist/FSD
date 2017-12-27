@@ -8,28 +8,51 @@ import io.atomix.catalyst.concurrent.SingleThreadContext;
 import io.atomix.catalyst.concurrent.ThreadContext;
 import io.atomix.catalyst.serializer.Serializer;
 import io.atomix.catalyst.transport.Address;
+import io.atomix.catalyst.transport.Connection;
 import io.atomix.catalyst.transport.Transport;
 import io.atomix.catalyst.transport.netty.NettyTransport;
+import remote.RemoteBank;
+import remote.RemoteCart;
 import rmi.DistributedObject;
+import rmi.Exportable;
 import rmi.Reference;
 
+import javax.sound.midi.SysexMessage;
 import java.util.List;
 
 public class StoreServer {
+    public static Bank lookupBank() {
+        ThreadContext tc = new SingleThreadContext("s-%d", new Serializer());
+        Transport t = new NettyTransport();
+        Address addr = new Address("localhost:11192");
+        Reference<Bank> ref = new Reference<>(addr, 1, Bank.class);
+        Connection c;
+
+        try {
+            c = (Connection) tc.execute(() ->
+                    t.client().connect(addr)
+            ).join().get();
+
+            return new RemoteBank(tc, c, 1, ref);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public static void main(String[] args) {
         Transport t = new NettyTransport();
         ThreadContext tc = new SingleThreadContext("srv-%d", new Serializer());
 
-        Address address = new Address(":11191");
+        Address address = new Address("localhost:11191");
         DistributedObject d = new DistributedObject(address);
 
         registMessages(tc);
         assignHandlers(t, tc, address, d);
 
-        // TODO this bank should be in another Server
-        Bank b = new BankImpl();
+        Bank b = lookupBank();
         Store store = new StoreImpl(b);
-        d.exportObject(Store.class, store);
+        d.exportObject(Store.class, (Exportable) store);
 
         System.out.println("Server ready on " + address.toString() + ".");
     }
@@ -42,6 +65,7 @@ public class StoreServer {
                  */
                 c.handler(StoreSearchReq.class, (m) -> {
                     Store store = (Store) d.get(m.getStoreId());
+
                     String title = m.getTitle();
 
                     Book book = store.search(title);
@@ -51,8 +75,8 @@ public class StoreServer {
                 c.handler(StoreMakeCartReq.class, m -> {
                     Store store = (Store) d.get(m.getStoreId());
 
-                    Cart cart = store.newCart();
-                    Reference ref = d.exportObject(Cart.class, cart);
+                    Cart cart =  store.newCart();
+                    Reference<Cart> ref = d.exportObject(Cart.class, (Exportable) cart);
 
                     return Futures.completedFuture(new StoreMakeCartRep(ref));
                 });
@@ -60,8 +84,9 @@ public class StoreServer {
                     Store store = (Store) d.get(m.getStoreId());
 
                     List<Sale> history = store.getHistory();
+                    List<Reference<Sale>> refs = d.exportList(Sale.class, (List) history);
 
-                    return Futures.completedFuture(new StoreGetHistoryRep(history));
+                    return Futures.completedFuture(new StoreGetHistoryRep(refs));
                 });
 
                 /*
@@ -77,12 +102,17 @@ public class StoreServer {
                 });
                 c.handler(CartBuyReq.class, m -> {
                     Cart cart = (Cart) d.get(m.getCartId());
-                    Account account = (Account) m.getClientAccount();
+                    Account clientAccount = null;
+                    try {
+                        clientAccount = DistributedObject.importObject(m.getClientAccount());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
 
-                    Sale sale = cart.buy(account);
-                    d.exportObject(Sale.class, sale);
+                    Sale sale = cart.buy(clientAccount);
+                    Reference<Sale> ref = d.exportObject(Sale.class, (Exportable) sale);
 
-                    return Futures.completedFuture(new CartBuyRep(sale));
+                    return Futures.completedFuture(new CartBuyRep(ref));
                 });
 
                 /*
@@ -90,7 +120,6 @@ public class StoreServer {
                  */
                 c.handler(SaleGetSoldReq.class, m -> {
                     Sale sale = (Sale) d.get(m.getSaleId());
-
                     List<Book> sold = sale.getSold();
 
                     return Futures.completedFuture(new SaleGetSoldRep(sold));
@@ -116,7 +145,6 @@ public class StoreServer {
         tc.serializer().register(StoreSearchReq.class);
         tc.serializer().register(StoreSearchRep.class);
 
-        tc.serializer().register(Sale.class);
         tc.serializer().register(SaleGetSoldReq.class);
         tc.serializer().register(SaleGetSoldRep.class);
         tc.serializer().register(SaleIsPaidReq.class);

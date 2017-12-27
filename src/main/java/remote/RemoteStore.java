@@ -13,7 +13,7 @@ import rmi.Reference;
 import java.util.List;
 
 public class RemoteStore extends Remote implements Store {
-    public RemoteStore(ThreadContext tc, Connection c, int id, Reference reference) {
+    public RemoteStore(ThreadContext tc, Connection c, Integer id, Reference reference) {
         super(tc, c, id, reference);
     }
 
@@ -26,6 +26,7 @@ public class RemoteStore extends Remote implements Store {
 
             return r.getBook();
         } catch(Exception e) {
+            e.printStackTrace();
             return null;
         }
     }
@@ -37,8 +38,9 @@ public class RemoteStore extends Remote implements Store {
                 c.sendAndReceive(new StoreGetHistoryReq(id))
             ).join().get();
 
-            return r.getSales();
+            return DistributedObject.importList(r.getSales());
         } catch(Exception e) {
+            e.printStackTrace();
             return null;
         }
     }
@@ -47,11 +49,12 @@ public class RemoteStore extends Remote implements Store {
     public Cart newCart() {
         try {
             StoreMakeCartRep r = (StoreMakeCartRep) tc.execute(() ->
-                    c.sendAndReceive(new StoreMakeCartReq())
+                    c.sendAndReceive(new StoreMakeCartReq(id))
             ).join().get();
 
             return DistributedObject.importObject(r.getCart());
         } catch(Exception e) {
+            e.printStackTrace();
             return null;
         }
 
@@ -59,6 +62,7 @@ public class RemoteStore extends Remote implements Store {
 
     @Override
     public void registerMessages() {
+        tc.serializer().register(Reference.class);
         tc.serializer().register(StoreMakeCartReq.class);
         tc.serializer().register(StoreMakeCartRep.class);
         tc.serializer().register(StoreGetHistoryReq.class);

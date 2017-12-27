@@ -9,6 +9,7 @@ import io.atomix.catalyst.transport.Address;
 import io.atomix.catalyst.transport.Transport;
 import io.atomix.catalyst.transport.netty.NettyTransport;
 import rmi.DistributedObject;
+import rmi.Exportable;
 import rmi.Reference;
 
 import java.util.List;
@@ -18,14 +19,14 @@ public class BankServer {
         Transport t = new NettyTransport();
         ThreadContext tc = new SingleThreadContext("srv-%d", new Serializer());
 
-        Address address = new Address(":11192");
+        Address address = new Address("localhost:11192");
         DistributedObject d = new DistributedObject(address);
 
         registMessages(tc);
         assignHandlers(t, tc, address, d);
 
         Bank bank = new BankImpl();
-        d.exportObject(Bank.class, bank);
+        d.exportObject(Bank.class, (Exportable) bank);
 
         System.out.println("Server ready on " + address.toString() + ".");
     }
@@ -38,7 +39,7 @@ public class BankServer {
                     int ib = m.getInitialBalance();
 
                     Account acc = bank.newAccount(ib);
-                    Reference ref = d.exportObject(Account.class, acc);
+                    Reference<Account> ref = d.exportObject(Account.class, (Exportable) acc);
 
                     return Futures.completedFuture(new BankMakeAccountRep(ref));
                 });

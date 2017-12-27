@@ -8,7 +8,7 @@ import io.atomix.catalyst.serializer.Serializer;
 public class SaleIsPaidReq implements CatalystSerializable {
     private int saleId;
 
-    public SaleIsPaidReq() {
+    private SaleIsPaidReq() {
     }
 
     public SaleIsPaidReq(int saleId) {

@@ -12,7 +12,7 @@ public class StoreMakeCartReq implements CatalystSerializable {
         return storeId;
     }
 
-    public StoreMakeCartReq() {
+    private StoreMakeCartReq() {
     }
 
     public StoreMakeCartReq(int storeId) {

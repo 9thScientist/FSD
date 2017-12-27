@@ -8,7 +8,7 @@ import io.atomix.catalyst.serializer.Serializer;
 public class StoreGetHistoryReq implements CatalystSerializable {
     private int storeId;
 
-    public StoreGetHistoryReq() {
+    private StoreGetHistoryReq() {
     }
 
     public StoreGetHistoryReq(int storeId) {

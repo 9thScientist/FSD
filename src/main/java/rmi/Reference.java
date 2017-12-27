@@ -33,20 +33,22 @@ public class Reference<T> implements CatalystSerializable {
     }
 
     @Override
+    public void writeObject(BufferOutput<?> bufferOutput, Serializer serializer) {
+        bufferOutput.writeInt(id);
+        serializer.writeObject(address, bufferOutput);
+        bufferOutput.writeString(type.getName());
+    }
+
+    @Override
     public void readObject(BufferInput<?> bufferInput, Serializer serializer) {
-        address = serializer.readObject(bufferInput);
         id = bufferInput.readInt();
+        address = serializer.readObject(bufferInput);
+
         try {
             type = (Class<T>) Class.forName(bufferInput.readString());
-        } catch (ClassNotFoundException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    @Override
-    public void writeObject(BufferOutput<?> bufferOutput, Serializer serializer) {
-        serializer.writeObject(address, bufferOutput);
-        bufferOutput.writeInt(id);
-        bufferOutput.writeString(type.getName());
-    }
 }

@@ -9,7 +9,7 @@ public class BankMakeAccountReq implements CatalystSerializable {
     private int bankId;
     private int initialBalance;
 
-    public BankMakeAccountReq() {
+    private BankMakeAccountReq() {
     }
 
     public BankMakeAccountReq(int bankId, int initialBalance) {

@@ -9,7 +9,7 @@ import io.atomix.catalyst.serializer.Serializer;
 public class StoreSearchRep implements CatalystSerializable {
     private Book book;
 
-    public StoreSearchRep() {
+    private StoreSearchRep() {
     }
 
     public StoreSearchRep(Book book) {

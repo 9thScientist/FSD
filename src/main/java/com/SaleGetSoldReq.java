@@ -8,7 +8,7 @@ import io.atomix.catalyst.serializer.Serializer;
 public class SaleGetSoldReq implements CatalystSerializable {
     private int saleId;
 
-    public SaleGetSoldReq() {
+    private SaleGetSoldReq() {
     }
 
     public SaleGetSoldReq(int saleId) {

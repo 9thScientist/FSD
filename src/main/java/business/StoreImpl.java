@@ -5,13 +5,14 @@ import io.atomix.catalyst.buffer.BufferInput;
 import io.atomix.catalyst.buffer.BufferOutput;
 import io.atomix.catalyst.serializer.CatalystSerializable;
 import io.atomix.catalyst.serializer.Serializer;
+import rmi.Exportable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class StoreImpl implements Store {
+public class StoreImpl extends Exportable implements Store {
     private Map<Integer, Book> collection = new HashMap<>();
     private ArrayList<Sale> history = new ArrayList<>();
     private Account storeAccount;
@@ -42,7 +43,7 @@ public class StoreImpl implements Store {
         return new CartImpl();
     }
 
-    public class CartImpl implements Cart {
+    public class CartImpl extends Exportable implements Cart {
         private List<Book> wishes = new ArrayList<>();
 
         public void add(Book b) {
@@ -69,7 +70,7 @@ public class StoreImpl implements Store {
         }
     }
 
-    public class SaleImpl implements Sale, CatalystSerializable {
+    public class SaleImpl extends Exportable implements Sale {
         private ArrayList<Book> sold;
         private boolean paid;
 
@@ -91,18 +92,6 @@ public class StoreImpl implements Store {
 
         public boolean isPaid() {
             return paid;
-        }
-
-        @Override
-        public void writeObject(BufferOutput<?> bufferOutput, Serializer serializer) {
-            serializer.writeObject(sold);
-            bufferOutput.writeBoolean(paid);
-        }
-
-        @Override
-        public void readObject(BufferInput<?> bufferInput, Serializer serializer) {
-            sold = serializer.readObject(bufferInput);
-            paid = bufferInput.readBoolean();
         }
     }
 }

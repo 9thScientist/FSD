@@ -7,10 +7,11 @@ import io.atomix.catalyst.transport.Connection;
 import rmi.Reference;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public class RemoteAccount extends Remote implements Account {
 
-    public RemoteAccount(ThreadContext tc, Connection c, int id, Reference reference) {
+    public RemoteAccount(ThreadContext tc, Connection c, Integer id, Reference reference) {
         super(tc, c, id, reference);
     }
 
@@ -18,11 +19,12 @@ public class RemoteAccount extends Remote implements Account {
     public void credit(int amount) {
         try {
             AccountCreditRep r = (AccountCreditRep) tc.execute(() ->
-                c.sendAndReceive(new AccountCreditReq(amount, account))
+                c.sendAndReceive(new AccountCreditReq(amount, id))
             ).join().get();
 
             return;
         } catch(Exception e) {
+            e.printStackTrace();
             return;
         }
     }
@@ -31,11 +33,12 @@ public class RemoteAccount extends Remote implements Account {
     public void debit(int amount) {
         try {
             AccountDebitRep r = (AccountDebitRep) tc.execute(() ->
-                    c.sendAndReceive(new AccountDebitReq(amount, account))
+                    c.sendAndReceive(new AccountDebitReq(amount, id))
             ).join().get();
 
             return;
         } catch(Exception e) {
+            e.printStackTrace();
             return;
         }
     }
@@ -44,11 +47,12 @@ public class RemoteAccount extends Remote implements Account {
     public List<Integer> getTransactions() {
         try {
             AccountGetTransactionsRep r = (AccountGetTransactionsRep) tc.execute(() ->
-                    c.sendAndReceive(new AccountCreditReq())
+                    c.sendAndReceive(new AccountGetTransactionsReq(id))
             ).join().get();
 
             return r.getTransactions();
         } catch(Exception e) {
+            e.printStackTrace();
             return null;
         }
     }
@@ -58,17 +62,20 @@ public class RemoteAccount extends Remote implements Account {
         try {
             Reference ref = ((RemoteAccount) to).getReference();
             AccountTransferRep r = (AccountTransferRep) tc.execute(() ->
-                    c.sendAndReceive(new AccountTransferReq(from, ref, amount))
+                    c.sendAndReceive(new AccountTransferReq(id, ref, amount))
             ).join().get();
 
             return r.isSuccess();
         } catch(Exception e) {
+            e.printStackTrace();
             return false;
         }
     }
 
     @Override
     public void registerMessages() {
+        tc.serializer().register(Reference.class);
+
         tc.serializer().register(AccountCreditReq.class);
         tc.serializer().register(AccountCreditRep.class);
         tc.serializer().register(AccountDebitReq.class);

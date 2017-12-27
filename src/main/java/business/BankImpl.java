@@ -2,6 +2,7 @@ package business;
 
 import interfaces.Account;
 import interfaces.Bank;
+import rmi.Exportable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,7 +11,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class BankImpl implements Bank {
+public class BankImpl extends Exportable implements Bank {
     private Map<Integer, AccountImpl> accounts = new HashMap<>();
     private AtomicInteger id = new AtomicInteger(0);
 
@@ -22,7 +23,7 @@ public class BankImpl implements Bank {
         return acc;
     }
 
-    private class AccountImpl implements Account {
+    private class AccountImpl extends Exportable implements Account {
         private int balance;
         private ArrayList<Integer> transactions = new ArrayList<>();
 

@@ -11,7 +11,7 @@ public class AccountCreditReq implements CatalystSerializable {
     private int accountId;
     private int amount;
 
-    public AccountCreditReq() {
+    private AccountCreditReq() {
     }
 
     public AccountCreditReq(int amount, int accountId) {

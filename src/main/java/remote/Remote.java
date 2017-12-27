@@ -10,7 +10,7 @@ public abstract class Remote {
     protected final int id;
     private final Reference reference;
 
-    public Remote(ThreadContext tc, Connection c, int id, Reference reference) {
+    public Remote(ThreadContext tc, Connection c, Integer id, Reference reference) {
         this.tc = tc;
         this.c = c;
         this.id = id;

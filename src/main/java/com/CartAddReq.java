@@ -10,7 +10,7 @@ public class CartAddReq implements CatalystSerializable {
     private int cartId;
     private Book book;
 
-    public CartAddReq() {
+    private CartAddReq() {
     }
 
     public CartAddReq(int id, Book book) {

@@ -11,7 +11,7 @@ import java.util.List;
 public class SaleGetSoldRep implements CatalystSerializable {
     List<Book> soldBooks;
 
-    public SaleGetSoldRep() {
+    private SaleGetSoldRep() {
     }
 
     public SaleGetSoldRep(List<Book> soldBooks) {

@@ -10,7 +10,7 @@ import java.util.List;
 public class AccountGetTransactionsRep implements CatalystSerializable {
     private List<Integer> transactions;
 
-    public AccountGetTransactionsRep() {
+    private AccountGetTransactionsRep() {
     }
 
     public AccountGetTransactionsRep(List<Integer> transactions) {

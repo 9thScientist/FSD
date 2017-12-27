@@ -11,7 +11,7 @@ public class CartBuyReq implements CatalystSerializable {
     private Reference<Account> clientAccount;
     private int cartId;
 
-    public CartBuyReq() {
+    private CartBuyReq() {
     }
 
     public CartBuyReq(Reference<Account> clientAccount, int cartId) {

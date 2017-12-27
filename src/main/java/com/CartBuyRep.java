@@ -5,18 +5,19 @@ import io.atomix.catalyst.buffer.BufferInput;
 import io.atomix.catalyst.buffer.BufferOutput;
 import io.atomix.catalyst.serializer.CatalystSerializable;
 import io.atomix.catalyst.serializer.Serializer;
+import rmi.Reference;
 
 public class CartBuyRep implements CatalystSerializable {
-    private Sale sale;
+    private Reference<Sale> sale;
 
-    public CartBuyRep() {
+    private CartBuyRep() {
     }
 
-    public CartBuyRep(Sale sale) {
+    public CartBuyRep(Reference<Sale> sale) {
         this.sale = sale;
     }
 
-    public Sale getSale() {
+    public Reference<Sale> getSale() {
         return sale;
     }
 

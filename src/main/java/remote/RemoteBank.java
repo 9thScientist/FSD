@@ -9,8 +9,10 @@ import io.atomix.catalyst.transport.Connection;
 import rmi.DistributedObject;
 import rmi.Reference;
 
+import java.sql.Ref;
+
 public class RemoteBank extends Remote implements Bank {
-    public RemoteBank(ThreadContext tc, Connection c, int id, Reference reference) {
+    public RemoteBank(ThreadContext tc, Connection c, Integer id, Reference reference) {
         super(tc, c, id, reference);
     }
 
@@ -18,17 +20,19 @@ public class RemoteBank extends Remote implements Bank {
     public Account newAccount(int balance) {
         try {
             BankMakeAccountRep r = (BankMakeAccountRep) tc.execute(() ->
-                    c.sendAndReceive(new BankMakeAccountReq())
+                    c.sendAndReceive(new BankMakeAccountReq(id, balance))
             ).join().get();
 
             return DistributedObject.importObject(r.getAccount());
         } catch(Exception e) {
+            e.printStackTrace();
             return null;
         }
     }
 
     @Override
     public void registerMessages() {
+        tc.serializer().register(Reference.class);
         tc.serializer().register(BankMakeAccountReq.class);
         tc.serializer().register(BankMakeAccountRep.class);
     }

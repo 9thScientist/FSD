@@ -9,7 +9,7 @@ public class AccountDebitReq implements CatalystSerializable {
     private int accountId;
     private int amount;
 
-    public AccountDebitReq() {
+    private AccountDebitReq() {
     }
 
     public AccountDebitReq(int amount, int account) {

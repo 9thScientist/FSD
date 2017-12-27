@@ -8,16 +8,16 @@ import io.atomix.catalyst.serializer.Serializer;
 import rmi.Reference;
 
 public class AccountTransferReq implements CatalystSerializable {
-    private int accountId;
+    private int from;
     private Reference<Account> to;
     private int amount;
 
-    public AccountTransferReq() {
+    private AccountTransferReq() {
 
     }
 
-    public AccountTransferReq(int accountId, Reference<Account> to, int amount) {
-        this.accountId = accountId;
+    public AccountTransferReq(int from, Reference<Account> to, int amount) {
+        this.from = from;
         this.to = to;
         this.amount = amount;
     }
@@ -27,7 +27,7 @@ public class AccountTransferReq implements CatalystSerializable {
     }
 
     public int getAccountId() {
-        return accountId;
+        return from;
     }
 
     public int getAmount() {
@@ -38,13 +38,13 @@ public class AccountTransferReq implements CatalystSerializable {
     public void writeObject(BufferOutput<?> bufferOutput, Serializer serializer) {
         bufferOutput.writeInt(amount);
         serializer.writeObject(to, bufferOutput);
-        serializer.writeObject(accountId, bufferOutput);
+        bufferOutput.writeInt(from);
     }
 
     @Override
     public void readObject(BufferInput<?> bufferInput, Serializer serializer) {
         amount = bufferInput.readInt();
         to = serializer.readObject(bufferInput);
-        accountId = bufferInput.readInt();
+        from = bufferInput.readInt();
     }
 }

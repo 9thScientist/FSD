@@ -8,7 +8,7 @@ import io.atomix.catalyst.serializer.Serializer;
 public class SaleIsPaidRep implements CatalystSerializable {
     private boolean paid;
 
-    public SaleIsPaidRep() {
+    private SaleIsPaidRep() {
     }
 
     public SaleIsPaidRep(boolean paid) {

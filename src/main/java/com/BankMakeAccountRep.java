@@ -11,22 +11,22 @@ import rmi.Reference;
 import java.sql.Ref;
 
 public class BankMakeAccountRep implements CatalystSerializable {
-    private Reference<RemoteAccount> account;
+    private Reference<Account> account;
 
-    public BankMakeAccountRep() {
+    private BankMakeAccountRep() {
     }
 
-    public BankMakeAccountRep(Reference<RemoteAccount> account) {
+    public BankMakeAccountRep(Reference<Account> account) {
         this.account = account;
     }
 
-    public Reference<RemoteAccount> getAccount() {
+    public Reference<Account> getAccount() {
         return account;
     }
 
     @Override
     public void writeObject(BufferOutput<?> bufferOutput, Serializer serializer) {
-        serializer.writeObject(account);
+        serializer.writeObject(account, bufferOutput);
     }
 
     @Override

@@ -8,7 +8,7 @@ import io.atomix.catalyst.serializer.Serializer;
 public class AccountTransferRep implements CatalystSerializable {
     private boolean success;
 
-    public AccountTransferRep() {
+    private AccountTransferRep() {
     }
 
     public AccountTransferRep(boolean success) {
