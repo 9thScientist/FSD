@@ -43,7 +43,7 @@ public class BankServer {
                     return Futures.completedFuture(new BankMakeAccountRep(ref));
                 });
                 c.handler(AccountTransferReq.class, m -> {
-                    Account from = d.get(m.getFrom());
+                    Account from = (Account) d.get(m.getAccountId());
                     Account to = d.get(m.getTo());
                     int amount = m.getAmount();
 
@@ -52,14 +52,14 @@ public class BankServer {
                     return Futures.completedFuture(new AccountTransferRep(success));
                 });
                 c.handler(AccountGetTransactionsReq.class, m -> {
-                    Account acc = d.get(m.getAccount());
+                    Account acc = (Account) d.get(m.getAccountId());
 
                     List<Integer> transactions = acc.getTransactions();
 
                     return Futures.completedFuture(new AccountGetTransactionsRep(transactions));
                 });
                 c.handler(AccountDebitReq.class, m -> {
-                    Account acc = d.get(m.getAccount());
+                    Account acc = (Account) d.get(m.getAccountId());
                     int amount = m.getAmount();
 
                     acc.debit(amount);
@@ -67,7 +67,7 @@ public class BankServer {
                     return Futures.completedFuture(new AccountDebitRep());
                 });
                 c.handler(AccountCreditReq.class, m -> {
-                    Account acc = d.get(m.getAccount());
+                    Account acc = (Account) d.get(m.getAccountId());
                     int amount = m.getAmount();
 
                     acc.credit(amount);

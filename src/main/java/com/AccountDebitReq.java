@@ -1,39 +1,39 @@
 package com;
 
-import interfaces.Account;
 import io.atomix.catalyst.buffer.BufferInput;
 import io.atomix.catalyst.buffer.BufferOutput;
 import io.atomix.catalyst.serializer.CatalystSerializable;
 import io.atomix.catalyst.serializer.Serializer;
-import rmi.Reference;
 
 public class AccountDebitReq implements CatalystSerializable {
+    private int accountId;
     private int amount;
-    private Reference<Account> account;
 
     public AccountDebitReq() {
     }
 
-    public AccountDebitReq(int amount, Reference<Account> account) {
+    public AccountDebitReq(int amount, int account) {
         this.amount = amount;
-        this.account = account;
+        this.accountId = account;
     }
 
     public int getAmount() {
         return amount;
     }
 
-    public Reference<Account> getAccount() {
-        return account;
+    public int getAccountId() {
+        return accountId;
     }
 
     @Override
     public void writeObject(BufferOutput<?> bufferOutput, Serializer serializer) {
+        bufferOutput.writeInt(accountId);
         bufferOutput.writeInt(amount);
     }
 
     @Override
     public void readObject(BufferInput<?> bufferInput, Serializer serializer) {
+        accountId = bufferInput.readInt();
         amount = bufferInput.readInt();
     }
 }

@@ -8,34 +8,34 @@ import io.atomix.catalyst.serializer.Serializer;
 import rmi.Reference;
 
 public class AccountCreditReq implements CatalystSerializable {
+    private int accountId;
     private int amount;
-    private Reference<Account> account;
 
     public AccountCreditReq() {
     }
 
-    public AccountCreditReq(int amount, Reference<Account> account) {
+    public AccountCreditReq(int amount, int accountId) {
         this.amount = amount;
-        this.account = account;
+        this.accountId = accountId;
     }
 
     public int getAmount() {
         return amount;
     }
 
-    public Reference<Account> getAccount() {
-        return account;
+    public int getAccountId() {
+        return accountId;
     }
 
     @Override
     public void writeObject(BufferOutput<?> bufferOutput, Serializer serializer) {
+        bufferOutput.writeInt(accountId);
         bufferOutput.writeInt(amount);
-        serializer.writeObject(account, bufferOutput);
     }
 
     @Override
     public void readObject(BufferInput<?> bufferInput, Serializer serializer) {
+        accountId = bufferInput.readInt();
         amount = bufferInput.readInt();
-        account = serializer.readObject(bufferInput);
     }
 }
