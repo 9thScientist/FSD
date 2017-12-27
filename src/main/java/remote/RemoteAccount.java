@@ -18,7 +18,7 @@ public class RemoteAccount extends Remote implements Account {
     public void credit(int amount) {
         try {
             AccountCreditRep r = (AccountCreditRep) tc.execute(() ->
-                c.sendAndReceive(new AccountCreditReq(amount))
+                c.sendAndReceive(new AccountCreditReq(amount, account))
             ).join().get();
 
             return;
@@ -31,7 +31,7 @@ public class RemoteAccount extends Remote implements Account {
     public void debit(int amount) {
         try {
             AccountDebitRep r = (AccountDebitRep) tc.execute(() ->
-                    c.sendAndReceive(new AccountDebitReq(amount))
+                    c.sendAndReceive(new AccountDebitReq(amount, account))
             ).join().get();
 
             return;
@@ -58,7 +58,7 @@ public class RemoteAccount extends Remote implements Account {
         try {
             Reference ref = ((RemoteAccount) to).getReference();
             AccountTransferRep r = (AccountTransferRep) tc.execute(() ->
-                    c.sendAndReceive(new AccountTransferReq(ref, amount))
+                    c.sendAndReceive(new AccountTransferReq(from, ref, amount))
             ).join().get();
 
             return r.isSuccess();

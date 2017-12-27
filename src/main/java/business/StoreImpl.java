@@ -16,7 +16,7 @@ public class StoreImpl implements Store {
     private ArrayList<Sale> history = new ArrayList<>();
     private Account storeAccount;
 
-    StoreImpl(Bank b) {
+    public StoreImpl(Bank b) {
         storeAccount = b.newAccount(1000);
 
         collection.put(1, new Book(1, 5, "Lev Tolstoy", "The Death of Ivan Ilyich"));
@@ -56,7 +56,7 @@ public class StoreImpl implements Store {
                 .reduce(0, (acc, price) -> acc + price);
         }
 
-        public void buy(Account client) {
+        public Sale buy(Account client) {
             SaleImpl s = new SaleImpl(wishes);
 
             history.add(s);
@@ -65,6 +65,7 @@ public class StoreImpl implements Store {
             s.setPaid();
 
             wishes.clear();
+            return s;
         }
     }
 

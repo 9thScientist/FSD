@@ -7,6 +7,7 @@ import com.CartBuyRep;
 import com.CartBuyReq;
 import interfaces.Account;
 import interfaces.Cart;
+import interfaces.Sale;
 import io.atomix.catalyst.concurrent.ThreadContext;
 import io.atomix.catalyst.transport.Connection;
 import rmi.Reference;
@@ -20,7 +21,7 @@ public class RemoteCart extends Remote implements Cart {
     public void add(Book b) {
         try {
             CartAddRep r = (CartAddRep) tc.execute(() ->
-                c.sendAndReceive(new CartAddReq(b))
+                c.sendAndReceive(new CartAddReq(id, b))
             ).join().get();
 
             return;
@@ -30,15 +31,15 @@ public class RemoteCart extends Remote implements Cart {
     }
 
     @Override
-    public void buy(Account bankAcc) {
+    public Sale buy(Account bankAcc) {
         try {
             CartBuyRep r = (CartBuyRep) tc.execute(() ->
                 c.sendAndReceive(new CartBuyReq())
             ).join().get();
 
-            return;
+            return r.getSale();
         } catch(Exception e) {
-            return;
+            return null;
         }
     }
 

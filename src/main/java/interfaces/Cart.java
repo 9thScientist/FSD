@@ -4,5 +4,5 @@ import business.Book;
 
 public interface Cart {
     void add(Book b);
-    void buy(Account bankAcc);
+    Sale buy(Account bankAcc);
 }

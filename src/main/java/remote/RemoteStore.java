@@ -21,7 +21,7 @@ public class RemoteStore extends Remote implements Store {
     public Book search(String title) {
         try {
             StoreSearchRep r = (StoreSearchRep) tc.execute(() ->
-                c.sendAndReceive(new StoreSearchReq(title))
+                c.sendAndReceive(new StoreSearchReq(title, id))
             ).join().get();
 
             return r.getBook();
@@ -34,7 +34,7 @@ public class RemoteStore extends Remote implements Store {
     public List<Sale> getHistory() {
         try {
             StoreGetHistoryRep r = (StoreGetHistoryRep) tc.execute(() ->
-                c.sendAndReceive(new StoreGetHistoryReq())
+                c.sendAndReceive(new StoreGetHistoryReq(id))
             ).join().get();
 
             return r.getSales();
