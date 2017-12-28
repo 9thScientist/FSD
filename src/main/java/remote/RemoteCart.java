@@ -9,7 +9,6 @@ import interfaces.Account;
 import interfaces.Cart;
 import interfaces.Sale;
 import io.atomix.catalyst.concurrent.ThreadContext;
-import io.atomix.catalyst.transport.Address;
 import io.atomix.catalyst.transport.Connection;
 import rmi.Context;
 import rmi.DistributedObject;
@@ -24,7 +23,7 @@ public class RemoteCart extends Remote implements Cart {
     @Override
     public void add(Book b) {
         try {
-            Context ctx = Manager.context.get();
+            Context ctx = Manager.getContext();
 
             if (ctx != null)
                 Manager.add(ctx, getReference());
@@ -44,7 +43,7 @@ public class RemoteCart extends Remote implements Cart {
     public Sale buy(Account from) {
         try {
             Reference clientRef = ((RemoteAccount) from).getReference();
-            Context ctx = Manager.context.get();
+            Context ctx = Manager.getContext();
 
             if (ctx != null)
                 Manager.add(ctx, getReference());

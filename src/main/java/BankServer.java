@@ -43,7 +43,8 @@ public class BankServer extends Server {
                 c.handler(BankMakeAccountReq.class, m -> {
                     Bank bank = (Bank) objs.get(m.getBankId());
 
-                    Manager.context.set(m.getContext());
+                    Manager.setContext(m.getContext());
+
                     if (m.getContext() != null)
                         startTransaction((Exportable) bank, m);
 
@@ -57,7 +58,8 @@ public class BankServer extends Server {
                 c.handler(AccountTransferReq.class, m -> {
                     Account from = (Account) objs.get(m.getAccountId());
 
-                    Manager.context.set(m.getContext());
+                    Manager.setContext(m.getContext());
+
                     if (m.getContext() != null)
                         startTransaction((Exportable) from, m);
 
@@ -71,7 +73,8 @@ public class BankServer extends Server {
                 c.handler(AccountGetTransactionsReq.class, m -> {
                     Account acc = (Account) objs.get(m.getAccountId());
 
-                    Manager.context.set(m.getContext());
+                    Manager.setContext(m.getContext());
+
                     if (m.getContext() != null)
                         startTransaction((Exportable) acc, null);
 
@@ -82,7 +85,8 @@ public class BankServer extends Server {
                 c.handler(AccountDebitReq.class, m -> {
                     Account acc = (Account) objs.get(m.getAccountId());
 
-                    Manager.context.set(m.getContext());
+                    Manager.setContext(m.getContext());
+
                     if (m.getContext() != null)
                         startTransaction((Exportable) acc, m);
 
@@ -94,7 +98,8 @@ public class BankServer extends Server {
                 c.handler(AccountCreditReq.class, m -> {
                     Account acc = (Account) objs.get(m.getAccountId());
 
-                    Manager.context.set(m.getContext());
+                    Manager.setContext(m.getContext());
+
                     if (m.getContext() != null)
                         startTransaction((Exportable) acc, m);
 

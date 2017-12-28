@@ -11,8 +11,6 @@ import rmi.DistributedObject;
 import rmi.Manager;
 import rmi.Reference;
 
-import java.sql.Ref;
-
 public class RemoteBank extends Remote implements Bank {
     public RemoteBank(ThreadContext tc, Connection c, Integer id, Reference reference) {
         super(tc, c, id, reference);
@@ -21,7 +19,7 @@ public class RemoteBank extends Remote implements Bank {
     @Override
     public Account newAccount(int balance) {
         try {
-            Context ctx = Manager.context.get();
+            Context ctx = Manager.getContext();
 
             if (ctx != null)
                 Manager.add(ctx, getReference());

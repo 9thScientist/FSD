@@ -56,7 +56,8 @@ public class StoreServer extends Server {
                 c.handler(StoreSearchReq.class, (m) -> {
                     Store store = (Store) objs.get(m.getStoreId());
 
-                    Manager.context.set(m.getContext());
+                    Manager.setContext(m.getContext());
+
                     if (m.getContext() != null)
                         startTransaction((Exportable) store, null);
 
@@ -68,7 +69,8 @@ public class StoreServer extends Server {
                 c.handler(StoreMakeCartReq.class, m -> {
                     Store store = (Store) objs.get(m.getStoreId());
 
-                    Manager.context.set(m.getContext());
+                    Manager.setContext(m.getContext());
+
                     if (m.getContext() != null)
                         startTransaction((Exportable) store, null);
 
@@ -80,7 +82,8 @@ public class StoreServer extends Server {
                 c.handler(StoreGetHistoryReq.class, m -> {
                     Store store = (Store) objs.get(m.getStoreId());
 
-                    Manager.context.set(m.getContext());
+                    Manager.setContext(m.getContext());
+
                     if (m.getContext() != null)
                         startTransaction((Exportable) store, null);
 
@@ -96,7 +99,8 @@ public class StoreServer extends Server {
                 c.handler(CartAddReq.class, m -> {
                     Cart cart = (Cart) objs.get(m.getCartId());
 
-                    Manager.context.set(m.getContext());
+                    Manager.setContext(m.getContext());
+
                     if (m.getContext() != null)
                         startTransaction((Exportable) cart, null);
 
@@ -108,7 +112,8 @@ public class StoreServer extends Server {
                 c.handler(CartBuyReq.class, m -> {
                     Cart cart = (Cart) objs.get(m.getCartId());
 
-                    Manager.context.set(m.getContext());
+                    Manager.setContext(m.getContext());
+
                     if (m.getContext() != null)
                         startTransaction((Exportable) cart, null);
 
@@ -125,7 +130,8 @@ public class StoreServer extends Server {
                 c.handler(SaleGetSoldReq.class, m -> {
                     Sale sale = (Sale) objs.get(m.getSaleId());
 
-                    Manager.context.set(m.getContext());
+                    Manager.setContext(m.getContext());
+
                     if (m.getContext() != null)
                         startTransaction((Exportable) sale, null);
 
@@ -136,7 +142,8 @@ public class StoreServer extends Server {
                 c.handler(SaleIsPaidReq.class, m -> {
                     Sale sale = (Sale) objs.get(m.getSaleId());
 
-                    Manager.context.set(m.getContext());
+                    Manager.setContext(m.getContext());
+
                     if (m.getContext() != null)
                         startTransaction((Exportable) sale, null);
 

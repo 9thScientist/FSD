@@ -3,7 +3,6 @@ package remote;
 import com.*;
 import interfaces.Account;
 import io.atomix.catalyst.concurrent.ThreadContext;
-import io.atomix.catalyst.transport.Address;
 import io.atomix.catalyst.transport.Connection;
 import rmi.Context;
 import rmi.Manager;
@@ -20,7 +19,7 @@ public class RemoteAccount extends Remote implements Account {
     @Override
     public void credit(int amount) {
         try {
-            Context ctx = Manager.context.get();
+            Context ctx = Manager.getContext();
 
             if (ctx != null)
                 Manager.add(ctx, getReference());
@@ -39,7 +38,7 @@ public class RemoteAccount extends Remote implements Account {
     @Override
     public void debit(int amount) {
         try {
-            Context ctx = Manager.context.get();
+            Context ctx = Manager.getContext();
 
             if (ctx != null)
                 Manager.add(ctx, getReference());
@@ -58,7 +57,7 @@ public class RemoteAccount extends Remote implements Account {
     @Override
     public List<Integer> getTransactions() {
         try {
-            Context ctx = Manager.context.get();
+            Context ctx = Manager.getContext();
 
             if (ctx != null)
                 Manager.add(ctx, getReference());
@@ -78,7 +77,7 @@ public class RemoteAccount extends Remote implements Account {
     public boolean transfer(Account to, int amount) {
         try {
             Reference toRef = ((RemoteAccount) to).getReference();
-            Context ctx = Manager.context.get();
+            Context ctx = Manager.getContext();
 
             if (ctx != null)
                 Manager.add(ctx, getReference());

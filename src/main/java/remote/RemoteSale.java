@@ -12,7 +12,6 @@ import rmi.Context;
 import rmi.Manager;
 import rmi.Reference;
 
-import java.sql.Ref;
 import java.util.List;
 
 public class RemoteSale extends Remote implements Sale {
@@ -28,7 +27,7 @@ public class RemoteSale extends Remote implements Sale {
             return sold;
 
         try {
-            Context ctx = Manager.context.get();
+            Context ctx = Manager.getContext();
 
             if (ctx != null)
                 Manager.add(ctx, getReference());
@@ -48,7 +47,7 @@ public class RemoteSale extends Remote implements Sale {
     @Override
     public boolean isPaid() {
         try {
-            Context ctx = Manager.context.get();
+            Context ctx = Manager.getContext();
 
             if (ctx != null)
                 Manager.add(ctx, getReference());

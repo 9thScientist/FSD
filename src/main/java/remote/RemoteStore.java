@@ -22,7 +22,7 @@ public class RemoteStore extends Remote implements Store {
     @Override
     public Book search(String title) {
         try {
-            Context ctx = Manager.context.get();
+            Context ctx = Manager.getContext();
 
             if (ctx != null)
                 Manager.add(ctx, getReference());
@@ -41,7 +41,7 @@ public class RemoteStore extends Remote implements Store {
     @Override
     public List<Sale> getHistory() {
         try {
-            Context ctx = Manager.context.get();
+            Context ctx = Manager.getContext();
 
             if (ctx != null)
                 Manager.add(ctx, getReference());
@@ -60,7 +60,7 @@ public class RemoteStore extends Remote implements Store {
     @Override
     public Cart newCart() {
         try {
-            Context ctx = Manager.context.get();
+            Context ctx = Manager.getContext();
 
             if (ctx != null)
                 Manager.add(ctx, getReference());
