@@ -11,6 +11,7 @@ import io.atomix.catalyst.transport.netty.NettyTransport;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -25,21 +26,24 @@ public class DistributedObject {
         counter = new AtomicInteger(0);
     }
 
-    public static <T> T importObject(Reference<T> ref) throws Exception {
-        Class<T> remoteType;
-
-        remoteType = (Class<T>) Class.forName("remote.Remote" + ref.getType().getSimpleName());
-
+    public static <T> T importObject(Reference<T> ref) {
         Transport t = new NettyTransport();
         ThreadContext tc = new SingleThreadContext("srv-%d", new Serializer());
 
-        Connection c = tc.execute(() ->
-                t.client().connect(ref.getAddress())
-        ).join().get();
+        try {
+            Class<T> remoteType = (Class<T>) Class.forName("remote.Remote" + ref.getType().getSimpleName());
 
-        return remoteType
-                .getDeclaredConstructor(ThreadContext.class, Connection.class, Integer.class, Reference.class)
-                .newInstance(tc, c, ref.getId(), ref);
+            Connection c = tc.execute(() ->
+                    t.client().connect(ref.getAddress())
+            ).join().get();
+
+            return remoteType
+                    .getDeclaredConstructor(ThreadContext.class, Connection.class, Integer.class, Reference.class)
+                    .newInstance(tc, c, ref.getId(), ref);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public <T> Reference<T> exportObject(Class<T> type, Exportable o) {
