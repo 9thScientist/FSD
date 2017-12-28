@@ -2,6 +2,7 @@ package remote;
 
 import io.atomix.catalyst.concurrent.ThreadContext;
 import io.atomix.catalyst.transport.Connection;
+import rmi.Context;
 import rmi.Reference;
 
 public abstract class Remote {
@@ -16,6 +17,8 @@ public abstract class Remote {
         this.id = id;
         this.reference = reference;
 
+        tc.serializer().register(Reference.class);
+        tc.serializer().register(Context.class);
         registerMessages();
     }
 

@@ -8,6 +8,8 @@ import com.SaleIsPaidReq;
 import interfaces.Sale;
 import io.atomix.catalyst.concurrent.ThreadContext;
 import io.atomix.catalyst.transport.Connection;
+import rmi.Context;
+import rmi.Manager;
 import rmi.Reference;
 
 import java.sql.Ref;
@@ -26,8 +28,13 @@ public class RemoteSale extends Remote implements Sale {
             return sold;
 
         try {
+            Context ctx = Manager.context.get();
+
+            if (ctx != null)
+                Manager.add(ctx, getReference());
+
             SaleGetSoldRep r = (SaleGetSoldRep) tc.execute(() ->
-                    c.sendAndReceive(new SaleGetSoldReq(id))
+                    c.sendAndReceive(new SaleGetSoldReq(id, ctx))
             ).join().get();
 
             sold = r.getSoldBooks();
@@ -41,8 +48,13 @@ public class RemoteSale extends Remote implements Sale {
     @Override
     public boolean isPaid() {
         try {
+            Context ctx = Manager.context.get();
+
+            if (ctx != null)
+                Manager.add(ctx, getReference());
+
             SaleIsPaidRep r = (SaleIsPaidRep) tc.execute(() ->
-                    c.sendAndReceive(new SaleIsPaidReq(id))
+                    c.sendAndReceive(new SaleIsPaidReq(id, ctx))
             ).join().get();
 
             return r.isPaid();

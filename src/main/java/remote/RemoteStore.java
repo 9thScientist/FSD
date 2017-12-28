@@ -7,7 +7,9 @@ import interfaces.Sale;
 import interfaces.Store;
 import io.atomix.catalyst.concurrent.ThreadContext;
 import io.atomix.catalyst.transport.Connection;
+import rmi.Context;
 import rmi.DistributedObject;
+import rmi.Manager;
 import rmi.Reference;
 
 import java.util.List;
@@ -20,8 +22,13 @@ public class RemoteStore extends Remote implements Store {
     @Override
     public Book search(String title) {
         try {
+            Context ctx = Manager.context.get();
+
+            if (ctx != null)
+                Manager.add(ctx, getReference());
+
             StoreSearchRep r = (StoreSearchRep) tc.execute(() ->
-                c.sendAndReceive(new StoreSearchReq(title, id))
+                c.sendAndReceive(new StoreSearchReq(title, id, ctx))
             ).join().get();
 
             return r.getBook();
@@ -34,8 +41,13 @@ public class RemoteStore extends Remote implements Store {
     @Override
     public List<Sale> getHistory() {
         try {
+            Context ctx = Manager.context.get();
+
+            if (ctx != null)
+                Manager.add(ctx, getReference());
+
             StoreGetHistoryRep r = (StoreGetHistoryRep) tc.execute(() ->
-                c.sendAndReceive(new StoreGetHistoryReq(id))
+                c.sendAndReceive(new StoreGetHistoryReq(id, ctx))
             ).join().get();
 
             return DistributedObject.importList(r.getSales());
@@ -48,8 +60,13 @@ public class RemoteStore extends Remote implements Store {
     @Override
     public Cart newCart() {
         try {
+            Context ctx = Manager.context.get();
+
+            if (ctx != null)
+                Manager.add(ctx, getReference());
+
             StoreMakeCartRep r = (StoreMakeCartRep) tc.execute(() ->
-                    c.sendAndReceive(new StoreMakeCartReq(id))
+                    c.sendAndReceive(new StoreMakeCartReq(id, ctx))
             ).join().get();
 
             return DistributedObject.importObject(r.getCart());
@@ -62,7 +79,6 @@ public class RemoteStore extends Remote implements Store {
 
     @Override
     public void registerMessages() {
-        tc.serializer().register(Reference.class);
         tc.serializer().register(StoreMakeCartReq.class);
         tc.serializer().register(StoreMakeCartRep.class);
         tc.serializer().register(StoreGetHistoryReq.class);

@@ -3,11 +3,13 @@ package remote;
 import com.*;
 import interfaces.Account;
 import io.atomix.catalyst.concurrent.ThreadContext;
+import io.atomix.catalyst.transport.Address;
 import io.atomix.catalyst.transport.Connection;
+import rmi.Context;
+import rmi.Manager;
 import rmi.Reference;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 public class RemoteAccount extends Remote implements Account {
 
@@ -18,8 +20,13 @@ public class RemoteAccount extends Remote implements Account {
     @Override
     public void credit(int amount) {
         try {
+            Context ctx = Manager.context.get();
+
+            if (ctx != null)
+                Manager.add(ctx, getReference());
+
             AccountCreditRep r = (AccountCreditRep) tc.execute(() ->
-                c.sendAndReceive(new AccountCreditReq(amount, id))
+                c.sendAndReceive(new AccountCreditReq(amount, id, ctx))
             ).join().get();
 
             return;
@@ -32,8 +39,13 @@ public class RemoteAccount extends Remote implements Account {
     @Override
     public void debit(int amount) {
         try {
+            Context ctx = Manager.context.get();
+
+            if (ctx != null)
+                Manager.add(ctx, getReference());
+
             AccountDebitRep r = (AccountDebitRep) tc.execute(() ->
-                    c.sendAndReceive(new AccountDebitReq(amount, id))
+                    c.sendAndReceive(new AccountDebitReq(amount, id, ctx))
             ).join().get();
 
             return;
@@ -46,8 +58,13 @@ public class RemoteAccount extends Remote implements Account {
     @Override
     public List<Integer> getTransactions() {
         try {
+            Context ctx = Manager.context.get();
+
+            if (ctx != null)
+                Manager.add(ctx, getReference());
+
             AccountGetTransactionsRep r = (AccountGetTransactionsRep) tc.execute(() ->
-                    c.sendAndReceive(new AccountGetTransactionsReq(id))
+                    c.sendAndReceive(new AccountGetTransactionsReq(id, ctx))
             ).join().get();
 
             return r.getTransactions();
@@ -60,9 +77,14 @@ public class RemoteAccount extends Remote implements Account {
     @Override
     public boolean transfer(Account to, int amount) {
         try {
-            Reference ref = ((RemoteAccount) to).getReference();
+            Reference toRef = ((RemoteAccount) to).getReference();
+            Context ctx = Manager.context.get();
+
+            if (ctx != null)
+                Manager.add(ctx, getReference());
+
             AccountTransferRep r = (AccountTransferRep) tc.execute(() ->
-                    c.sendAndReceive(new AccountTransferReq(id, ref, amount))
+                    c.sendAndReceive(new AccountTransferReq(id, toRef, amount, ctx))
             ).join().get();
 
             return r.isSuccess();
@@ -74,7 +96,6 @@ public class RemoteAccount extends Remote implements Account {
 
     @Override
     public void registerMessages() {
-        tc.serializer().register(Reference.class);
 
         tc.serializer().register(AccountCreditReq.class);
         tc.serializer().register(AccountCreditRep.class);

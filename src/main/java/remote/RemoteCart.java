@@ -9,8 +9,11 @@ import interfaces.Account;
 import interfaces.Cart;
 import interfaces.Sale;
 import io.atomix.catalyst.concurrent.ThreadContext;
+import io.atomix.catalyst.transport.Address;
 import io.atomix.catalyst.transport.Connection;
+import rmi.Context;
 import rmi.DistributedObject;
+import rmi.Manager;
 import rmi.Reference;
 
 public class RemoteCart extends Remote implements Cart {
@@ -21,8 +24,13 @@ public class RemoteCart extends Remote implements Cart {
     @Override
     public void add(Book b) {
         try {
+            Context ctx = Manager.context.get();
+
+            if (ctx != null)
+                Manager.add(ctx, getReference());
+
             CartAddRep r = (CartAddRep) tc.execute(() ->
-                c.sendAndReceive(new CartAddReq(id, b))
+                c.sendAndReceive(new CartAddReq(id, b, ctx))
             ).join().get();
 
             return;
@@ -35,9 +43,14 @@ public class RemoteCart extends Remote implements Cart {
     @Override
     public Sale buy(Account from) {
         try {
-            Reference ref = ((RemoteAccount) from).getReference();
+            Reference clientRef = ((RemoteAccount) from).getReference();
+            Context ctx = Manager.context.get();
+
+            if (ctx != null)
+                Manager.add(ctx, getReference());
+
             CartBuyRep r = (CartBuyRep) tc.execute(() ->
-                c.sendAndReceive(new CartBuyReq(ref, id))
+                c.sendAndReceive(new CartBuyReq(clientRef, id, ctx))
             ).join().get();
 
             return DistributedObject.importObject(r.getSale());
@@ -49,7 +62,6 @@ public class RemoteCart extends Remote implements Cart {
 
     @Override
     public void registerMessages() {
-        tc.serializer().register(Reference.class);
         tc.serializer().register(CartAddReq.class);
         tc.serializer().register(CartAddRep.class);
         tc.serializer().register(CartBuyReq.class);

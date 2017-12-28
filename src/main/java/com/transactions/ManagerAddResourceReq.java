@@ -1,6 +1,5 @@
-package com;
+package com.transactions;
 
-import interfaces.Account;
 import io.atomix.catalyst.buffer.BufferInput;
 import io.atomix.catalyst.buffer.BufferOutput;
 import io.atomix.catalyst.serializer.CatalystSerializable;
@@ -8,43 +7,35 @@ import io.atomix.catalyst.serializer.Serializer;
 import rmi.Context;
 import rmi.Reference;
 
-public class AccountCreditReq implements CatalystSerializable {
-    private int accountId;
-    private int amount;
+public class ManagerAddResourceReq implements CatalystSerializable {
     private Context context;
+    private Reference reference;
 
-    private AccountCreditReq() {
+    private ManagerAddResourceReq() {
     }
 
-    public AccountCreditReq(int accountId, int amount, Context context) {
-        this.accountId = accountId;
-        this.amount = amount;
+    public ManagerAddResourceReq(Context context, Reference reference) {
         this.context = context;
-    }
-
-    public int getAmount() {
-        return amount;
-    }
-
-    public int getAccountId() {
-        return accountId;
+        this.reference = reference;
     }
 
     public Context getContext() {
         return context;
     }
 
+    public Reference getReference() {
+        return reference;
+    }
+
     @Override
     public void writeObject(BufferOutput<?> bufferOutput, Serializer serializer) {
-        bufferOutput.writeInt(accountId);
-        bufferOutput.writeInt(amount);
         serializer.writeObject(context, bufferOutput);
+        serializer.writeObject(reference, bufferOutput);
     }
 
     @Override
     public void readObject(BufferInput<?> bufferInput, Serializer serializer) {
-        accountId = bufferInput.readInt();
-        amount = bufferInput.readInt();
         context = serializer.readObject(bufferInput);
+        reference = serializer.readObject(bufferInput);
     }
 }

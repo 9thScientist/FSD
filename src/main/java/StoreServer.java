@@ -11,16 +11,20 @@ import io.atomix.catalyst.transport.Address;
 import io.atomix.catalyst.transport.Connection;
 import io.atomix.catalyst.transport.Transport;
 import io.atomix.catalyst.transport.netty.NettyTransport;
+import pt.haslab.ekit.Log;
 import remote.RemoteBank;
 import remote.RemoteCart;
-import rmi.DistributedObject;
-import rmi.Exportable;
-import rmi.Reference;
+import rmi.*;
 
 import javax.sound.midi.SysexMessage;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class StoreServer {
+    private static Lock lock = new ReentrantLock();
+    private static Log log = new Log("store");
+
     public static Bank lookupBank() {
         ThreadContext tc = new SingleThreadContext("s-%d", new Serializer());
         Transport t = new NettyTransport();
@@ -29,7 +33,7 @@ public class StoreServer {
         Connection c;
 
         try {
-            c = (Connection) tc.execute(() ->
+            c = tc.execute(() ->
                     t.client().connect(addr)
             ).join().get();
 
@@ -41,6 +45,7 @@ public class StoreServer {
     }
 
     public static void main(String[] args) {
+        Log log = new Log("bank");
         Transport t = new NettyTransport();
         ThreadContext tc = new SingleThreadContext("srv-%d", new Serializer());
 
@@ -49,12 +54,16 @@ public class StoreServer {
 
         registMessages(tc);
         assignHandlers(t, tc, address, d);
+        assignLogHandlers(tc);
 
         Bank b = lookupBank();
         Store store = new StoreImpl(b);
         d.exportObject(Store.class, (Exportable) store);
 
         System.out.println("Server ready on " + address.toString() + ".");
+    }
+
+    private static void assignLogHandlers(ThreadContext tc) {
     }
 
     private static void assignHandlers(Transport t, ThreadContext tc, Address address, DistributedObject d) {
@@ -64,8 +73,11 @@ public class StoreServer {
                  * Store Handlers
                  */
                 c.handler(StoreSearchReq.class, (m) -> {
-                    Store store = (Store) d.get(m.getStoreId());
+                    Manager.context.set(m.getContext());
+                    if (m.getContext() != null)
+                        lock.lock();
 
+                    Store store = (Store) d.get(m.getStoreId());
                     String title = m.getTitle();
 
                     Book book = store.search(title);
@@ -73,14 +85,25 @@ public class StoreServer {
                     return Futures.completedFuture(new StoreSearchRep(book));
                 });
                 c.handler(StoreMakeCartReq.class, m -> {
+                    Manager.context.set(m.getContext());
+                    if (m.getContext() != null)
+                        lock.lock();
+
                     Store store = (Store) d.get(m.getStoreId());
 
                     Cart cart =  store.newCart();
                     Reference<Cart> ref = d.exportObject(Cart.class, (Exportable) cart);
 
+                    if (m.getContext() != null)
+                        log.append(cart);
+
                     return Futures.completedFuture(new StoreMakeCartRep(ref));
                 });
                 c.handler(StoreGetHistoryReq.class, m -> {
+                    Manager.context.set(m.getContext());
+                    if (m.getContext() != null)
+                        lock.lock();
+
                     Store store = (Store) d.get(m.getStoreId());
 
                     List<Sale> history = store.getHistory();
@@ -93,24 +116,33 @@ public class StoreServer {
                  * Cart Handlers
                  */
                 c.handler(CartAddReq.class, m -> {
+                    Manager.context.set(m.getContext());
+                    if (m.getContext() != null)
+                        lock.lock();
+
                     Cart cart = (Cart) d.get(m.getCartId());
                     Book book = m.getBook();
 
                     cart.add(book);
 
+                    if (m.getContext() != null)
+                        log.append(cart);
+
                     return Futures.completedFuture(new CartAddRep());
                 });
                 c.handler(CartBuyReq.class, m -> {
+                    Manager.context.set(m.getContext());
+                    if (m.getContext() != null)
+                        lock.lock();
+
                     Cart cart = (Cart) d.get(m.getCartId());
-                    Account clientAccount = null;
-                    try {
-                        clientAccount = DistributedObject.importObject(m.getClientAccount());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                    Account clientAccount = DistributedObject.importObject(m.getClientAccount());
 
                     Sale sale = cart.buy(clientAccount);
                     Reference<Sale> ref = d.exportObject(Sale.class, (Exportable) sale);
+
+                    if (m.getContext() != null)
+                        log.append(sale);
 
                     return Futures.completedFuture(new CartBuyRep(ref));
                 });
@@ -119,12 +151,20 @@ public class StoreServer {
                  * Sale Handlers
                  */
                 c.handler(SaleGetSoldReq.class, m -> {
+                    Manager.context.set(m.getContext());
+                    if (m.getContext() != null)
+                        lock.lock();
+
                     Sale sale = (Sale) d.get(m.getSaleId());
                     List<Book> sold = sale.getSold();
 
                     return Futures.completedFuture(new SaleGetSoldRep(sold));
                 });
                 c.handler(SaleIsPaidReq.class, m -> {
+                    Manager.context.set(m.getContext());
+                    if (m.getContext() != null)
+                        lock.lock();
+
                     Sale sale = (Sale) d.get(m.getSaleId());
 
                     Boolean paid = sale.isPaid();
@@ -137,6 +177,7 @@ public class StoreServer {
 
     private static void registMessages(ThreadContext tc) {
         tc.serializer().register(Reference.class);
+        tc.serializer().register(Context.class);
 
         tc.serializer().register(StoreGetHistoryReq.class);
         tc.serializer().register(StoreGetHistoryRep.class);
