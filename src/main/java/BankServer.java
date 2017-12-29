@@ -2,111 +2,104 @@ import business.BankImpl;
 import com.*;
 import interfaces.*;
 import io.atomix.catalyst.concurrent.Futures;
-import io.atomix.catalyst.concurrent.SingleThreadContext;
-import io.atomix.catalyst.concurrent.ThreadContext;
-import io.atomix.catalyst.serializer.Serializer;
 import io.atomix.catalyst.transport.Address;
 import io.atomix.catalyst.transport.Transport;
-import io.atomix.catalyst.transport.netty.NettyTransport;
-import pt.haslab.ekit.Log;
 import rmi.*;
 
 import java.util.List;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
-public class BankServer {
-    private static Lock lock = new ReentrantLock();
-    private static Log log = new Log("bank");
+public class BankServer extends Server {
+    private Bank bank;
 
-    public static void main(String[] args) {
-        Transport t = new NettyTransport();
-        ThreadContext tc = new SingleThreadContext("srv-%d", new Serializer());
-
-        Address address = new Address("localhost:11192");
-        DistributedObject d = new DistributedObject(address);
-
-        registMessages(tc);
-        assignHandlers(t, tc, address, d);
-
-        Bank bank = new BankImpl();
-        d.exportObject(Bank.class, (Exportable) bank);
-
-        System.out.println("Server ready on " + address.toString() + ".");
+    BankServer(Bank bank, Address addr, String logName) {
+        super(addr, logName);
+        this.bank = bank;
     }
 
-    private static void assignHandlers(Transport t, ThreadContext tc, Address address, DistributedObject d) {
+    public static void main(String[] args) {
+        Address address = new Address("localhost:11192");
+        Bank bank = new BankImpl();
+
+        BankServer srv = new BankServer(bank, address, "bank");
+        srv.objs.exportObject(Bank.class, (Exportable) bank);
+
+        srv.start();
+        System.out.println("Server ready on " + address + ".");
+    }
+
+    public void backup(List<Object> save) {
+        save.add(bank.clone());
+        save.add(objs.clone());
+    }
+
+    public void rollback(List<Object> save) {
+        bank = (Bank) save.get(0);
+        objs = (DistributedObject) save.get(1);
+    }
+
+    public void run(Address address, Transport t) {
         tc.execute(()-> {
             t.server().listen(address, (c)-> {
                 c.handler(BankMakeAccountReq.class, m -> {
+                    Bank bank = (Bank) objs.get(m.getBankId());
+
                     Manager.context.set(m.getContext());
                     if (m.getContext() != null)
-                        lock.lock();
+                        startTransaction((Exportable) bank, m);
 
-                    Bank bank = (Bank) d.get(m.getBankId());
                     int ib = m.getInitialBalance();
 
                     Account acc = bank.newAccount(ib);
-                    Reference<Account> ref = d.exportObject(Account.class, (Exportable) acc);
-
-                    if (m.getContext() != null)
-                        log.append(acc);
+                    Reference<Account> ref = objs.exportObject(Account.class, (Exportable) acc);
 
                     return Futures.completedFuture(new BankMakeAccountRep(ref));
                 });
                 c.handler(AccountTransferReq.class, m -> {
+                    Account from = (Account) objs.get(m.getAccountId());
+
                     Manager.context.set(m.getContext());
                     if (m.getContext() != null)
-                        lock.lock();
+                        startTransaction((Exportable) from, m);
 
-                    Account from = (Account) d.get(m.getAccountId());
-                    Account to = d.get(m.getTo());
+                    Account to = objs.get(m.getTo());
                     int amount = m.getAmount();
 
                     boolean success = from.transfer(to, amount);
 
-                    if (m.getContext() != null)
-                        log.append(from);
-
                     return Futures.completedFuture(new AccountTransferRep(success));
                 });
                 c.handler(AccountGetTransactionsReq.class, m -> {
+                    Account acc = (Account) objs.get(m.getAccountId());
+
                     Manager.context.set(m.getContext());
                     if (m.getContext() != null)
-                        lock.lock();
+                        startTransaction((Exportable) acc, null);
 
-                    Account acc = (Account) d.get(m.getAccountId());
                     List<Integer> transactions = acc.getTransactions();
 
                     return Futures.completedFuture(new AccountGetTransactionsRep(transactions));
                 });
                 c.handler(AccountDebitReq.class, m -> {
+                    Account acc = (Account) objs.get(m.getAccountId());
+
                     Manager.context.set(m.getContext());
                     if (m.getContext() != null)
-                        lock.lock();
+                        startTransaction((Exportable) acc, m);
 
-                    Account acc = (Account) d.get(m.getAccountId());
                     int amount = m.getAmount();
-
                     acc.debit(amount);
-
-                    if (m.getContext() != null)
-                        log.append(acc);
 
                     return Futures.completedFuture(new AccountDebitRep());
                 });
                 c.handler(AccountCreditReq.class, m -> {
+                    Account acc = (Account) objs.get(m.getAccountId());
+
                     Manager.context.set(m.getContext());
                     if (m.getContext() != null)
-                        lock.unlock();
+                        startTransaction((Exportable) acc, m);
 
-                    Account acc = (Account) d.get(m.getAccountId());
                     int amount = m.getAmount();
-
                     acc.credit(amount);
-
-                    if (m.getContext() != null)
-                        log.append(acc);
 
                     return Futures.completedFuture(new AccountCreditRep());
                 });
@@ -114,7 +107,7 @@ public class BankServer {
         });
     }
 
-    private static void registMessages(ThreadContext tc) {
+    public void registerMessages() {
         tc.serializer().register(Reference.class);
         tc.serializer().register(Context.class);
 

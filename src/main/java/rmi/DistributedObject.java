@@ -7,6 +7,7 @@ import io.atomix.catalyst.transport.Address;
 import io.atomix.catalyst.transport.Connection;
 import io.atomix.catalyst.transport.Transport;
 import io.atomix.catalyst.transport.netty.NettyTransport;
+import org.apache.derby.impl.load.Export;
 
 import java.util.List;
 import java.util.Map;
@@ -16,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class DistributedObject {
-    private Map<Integer, Object> objects;
+    private Map<Integer, Exportable> objects;
     private AtomicInteger counter;
     private Address address;
 
@@ -76,6 +77,15 @@ public class DistributedObject {
                 .collect(Collectors.toList());
     }
 
+    public DistributedObject clone() {
+        DistributedObject copy = new DistributedObject(this.address);
+        copy.counter = new AtomicInteger(counter.get());
+
+        copy.objects = new TreeMap<>();
+        objects.forEach((k,v) -> copy.objects.put(k, (Exportable) v.clone()));
+
+        return copy;
+    }
 
     public Object get(int id) {
         return objects.get(id);

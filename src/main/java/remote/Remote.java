@@ -1,11 +1,12 @@
 package remote;
 
+import interfaces.Resource;
 import io.atomix.catalyst.concurrent.ThreadContext;
 import io.atomix.catalyst.transport.Connection;
 import rmi.Context;
 import rmi.Reference;
 
-public abstract class Remote {
+public abstract class Remote implements Resource {
     protected final ThreadContext tc;
     protected final Connection c;
     protected final int id;
@@ -27,4 +28,8 @@ public abstract class Remote {
     }
 
     public abstract void registerMessages();
+
+    public Remote clone() {
+        return this;
+    }
 }

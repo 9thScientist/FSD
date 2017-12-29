@@ -1,10 +1,6 @@
 package business;
 
 import interfaces.*;
-import io.atomix.catalyst.buffer.BufferInput;
-import io.atomix.catalyst.buffer.BufferOutput;
-import io.atomix.catalyst.serializer.CatalystSerializable;
-import io.atomix.catalyst.serializer.Serializer;
 import rmi.Exportable;
 
 import java.util.ArrayList;
@@ -16,6 +12,10 @@ public class StoreImpl extends Exportable implements Store {
     private Map<Integer, Book> collection = new HashMap<>();
     private ArrayList<Sale> history = new ArrayList<>();
     private Account storeAccount;
+
+    private StoreImpl() {
+
+    }
 
     public StoreImpl(Bank b) {
         storeAccount = b.newAccount(1000);
@@ -43,6 +43,29 @@ public class StoreImpl extends Exportable implements Store {
         return new CartImpl();
     }
 
+    private void setCollection(Map<Integer, Book> collection) {
+        this.collection = new HashMap<>();
+        collection.forEach((k,v) -> this.collection.put(k, v));
+    }
+
+    private void setHistory(List<Sale> history) {
+        this.history = new ArrayList<>();
+        history.forEach(s -> this.history.add((Sale) s.clone()));
+    }
+
+    private void setStoreAccount(Account storeAccount) {
+        this.storeAccount = (Account) storeAccount.clone();
+    }
+
+    public StoreImpl clone() {
+        StoreImpl copy = new StoreImpl();
+        copy.setCollection(this.collection);
+        copy.setHistory(this.history);
+        copy.setStoreAccount(this.storeAccount);
+
+        return copy;
+    }
+
     public class CartImpl extends Exportable implements Cart {
         private List<Book> wishes = new ArrayList<>();
 
@@ -68,6 +91,18 @@ public class StoreImpl extends Exportable implements Store {
             wishes.clear();
             return s;
         }
+
+        private void setWishes(List<Book> wishes) {
+            this.wishes = new ArrayList<>();
+            wishes.forEach(w -> this.wishes.add(w));
+        }
+
+        public CartImpl clone() {
+            CartImpl copy = new CartImpl();
+            copy.setWishes(this.wishes);
+
+            return copy;
+        }
     }
 
     public class SaleImpl extends Exportable implements Sale {
@@ -86,12 +121,23 @@ public class StoreImpl extends Exportable implements Store {
             paid = true;
         }
 
+        private void setPaid(boolean paid) {
+            this.paid = paid;
+        }
+
         public List<Book> getSold() {
             return (List<Book>) sold.clone();
         }
 
         public boolean isPaid() {
             return paid;
+        }
+
+        public SaleImpl clone() {
+            SaleImpl copy = new SaleImpl(this.sold);
+            copy.setPaid(this.paid);
+
+            return copy;
         }
     }
 }
