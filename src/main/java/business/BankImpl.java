@@ -2,13 +2,17 @@ package business;
 
 import interfaces.Account;
 import interfaces.Bank;
+import io.atomix.catalyst.concurrent.Futures;
+import org.omg.CORBA.TIMEOUT;
 import rmi.Exportable;
 
+import javax.sound.midi.SysexMessage;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class BankImpl extends Exportable implements Bank {
@@ -31,11 +35,15 @@ public class BankImpl extends Exportable implements Bank {
             this.balance = balance;
         }
 
-        public boolean transfer(Account to, int amount) {
-            debit(amount);
-            to.credit(amount);
+        public CompletableFuture<Void> transfer(Account to, int amount) {
+            CompletableFuture<Void> r = new CompletableFuture<>();
 
-            return true;
+            CompletableFuture.runAsync(() -> {
+                debit(amount);
+                to.credit(amount);
+            }).thenRun(() -> r.complete(null));
+
+            return r;
         }
 
         public List<Integer> getTransactions() {

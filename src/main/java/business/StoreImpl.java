@@ -7,10 +7,13 @@ import io.atomix.catalyst.serializer.CatalystSerializable;
 import io.atomix.catalyst.serializer.Serializer;
 import rmi.Exportable;
 
+import javax.sound.midi.SysexMessage;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 public class StoreImpl extends Exportable implements Store {
     private Map<Integer, Book> collection = new HashMap<>();
@@ -62,8 +65,11 @@ public class StoreImpl extends Exportable implements Store {
 
             history.add(s);
 
-            client.transfer(storeAccount, value());
-            s.setPaid();
+            client.transfer(storeAccount, value())
+                  .thenRun(() -> {
+                      s.setPaid();
+                      System.out.println("Set paid");
+                  });
 
             wishes.clear();
             return s;
@@ -72,10 +78,9 @@ public class StoreImpl extends Exportable implements Store {
 
     public class SaleImpl extends Exportable implements Sale {
         private ArrayList<Book> sold;
-        private boolean paid;
+        private boolean paid = false;
 
         public SaleImpl(List<Book> sold) {
-            this.paid = false;
             this.sold = new ArrayList<>();
 
             for(Book b: sold)

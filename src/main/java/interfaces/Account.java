@@ -1,10 +1,11 @@
 package interfaces;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public interface Account {
     void credit(int amount);
     void debit(int amount);
     List<Integer> getTransactions();
-    boolean transfer(Account to, int amount);
+    CompletableFuture<Void> transfer(Account to, int amount);
 }

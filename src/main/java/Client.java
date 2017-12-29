@@ -11,7 +11,9 @@ import remote.RemoteBank;
 import remote.RemoteStore;
 import rmi.Reference;
 
+import javax.sound.midi.SysexMessage;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class Client {
     public static Store lookupStore() {
@@ -52,7 +54,7 @@ public class Client {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         Store store = lookupStore();
         Bank bank = lookupBank();
 
@@ -68,14 +70,17 @@ public class Client {
         Account acc = bank.newAccount(500);
         System.out.println("Created bank account: " + acc);
 
-        cart.buy(acc);
-        System.out.println("Bought books in my cart");
+        Sale s = cart.buy(acc);
+        System.out.println("Bought books in my cart. Transfer processed: " + s.isPaid());
 
         List<Sale> myBooks = store.getHistory();
         System.out.println("Got history from store");
 
-        for(Sale s: myBooks)
-            for(Book bb: s.getSold())
+        for(Sale ss: myBooks)
+            for(Book bb: ss.getSold())
                 System.out.println(bb.getTitle());
+
+        TimeUnit.SECONDS.sleep(5);
+        System.out.println("Transfer processed: " + s.isPaid());
     }
 }

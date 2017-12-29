@@ -110,6 +110,7 @@ public class StoreServer {
                     }
 
                     Sale sale = cart.buy(clientAccount);
+                    System.out.println("Transfer processed: " + sale.isPaid());
                     Reference<Sale> ref = d.exportObject(Sale.class, (Exportable) sale);
 
                     return Futures.completedFuture(new CartBuyRep(ref));
@@ -127,9 +128,18 @@ public class StoreServer {
                 c.handler(SaleIsPaidReq.class, m -> {
                     Sale sale = (Sale) d.get(m.getSaleId());
 
-                    Boolean paid = sale.isPaid();
+                    boolean paid = sale.isPaid();
+                    System.out.println("Is it paid?: " + paid);
 
                     return Futures.completedFuture(new SaleIsPaidRep(paid));
+                });
+
+                /*
+                 * Bank async handler
+                 */
+                c.handler(AccountTransferRep.class, m -> {
+                    
+                    return null;
                 });
             });
         });

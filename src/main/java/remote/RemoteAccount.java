@@ -58,18 +58,21 @@ public class RemoteAccount extends Remote implements Account {
     }
 
     @Override
-    public boolean transfer(Account to, int amount) {
-        try {
-            Reference ref = ((RemoteAccount) to).getReference();
-            AccountTransferRep r = (AccountTransferRep) tc.execute(() ->
-                    c.sendAndReceive(new AccountTransferReq(id, ref, amount))
-            ).join().get();
+    public CompletableFuture<Void> transfer(Account to, int amount) {
+        CompletableFuture<Void> r = new CompletableFuture<>();
+        Reference ref = ((RemoteAccount) to).getReference();
 
-            return r.isSuccess();
-        } catch(Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+        tc.execute(() -> {
+            c.sendAndReceive(new AccountTransferReq(id, ref, amount))
+            .thenRun(() -> r.complete(null))
+            .whenComplete((x,y) -> {
+                System.out.println("RES: " + x);
+                System.out.println("EXC: " + y);
+            });
+        });
+
+
+        return r;
     }
 
     @Override

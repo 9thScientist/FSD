@@ -13,6 +13,7 @@ import rmi.Exportable;
 import rmi.Reference;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class BankServer {
     public static void main(String[] args) {
@@ -48,9 +49,15 @@ public class BankServer {
                     Account to = d.get(m.getTo());
                     int amount = m.getAmount();
 
-                    boolean success = from.transfer(to, amount);
+                    from.transfer(to, amount);
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
 
-                    return Futures.completedFuture(new AccountTransferRep(success));
+                    System.out.println("Returning reply");
+                    return Futures.completedFuture(new AccountTransferRep());
                 });
                 c.handler(AccountGetTransactionsReq.class, m -> {
                     Account acc = (Account) d.get(m.getAccountId());
