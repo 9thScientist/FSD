@@ -22,16 +22,14 @@ public class Manager {
             new ThreadLocal<>();
     private static final ThreadLocal<List<Address>> participants =
             new ThreadLocal<>().withInitial(ArrayList::new);
-    private static final ThreadLocal<Log> logger =
-            new ThreadLocal<>().withInitial(() -> new Log("Mngr"));
+    private Map<Integer, Transaction> logTransactions = new HashMap<>();
+    private static final Log log = new Log("Manager" + Manager.context.get());
 
     private static ThreadContext tc = new SingleThreadContext("mngr-%d", new Serializer());
     private static Transport t = new NettyTransport();
     private static Address address;
 
     public static void begin() throws AddressNotSetException {
-        Log log = logger.get();
-
         if (address == null)
             throw new AddressNotSetException("Manager's address is not set");
 
@@ -43,7 +41,7 @@ public class Manager {
                     c.handler(ManagerAddResourceReq.class, m -> {
                         participants.get().add(m.getReference().getAddress());
 
-                        log.append(m.getReference());
+                        log.append(m);
                     }));
         });
 
@@ -52,7 +50,6 @@ public class Manager {
 
     public static void commit() {
         Context current = context.get();
-        Log log = logger.get();
         Address[] participants = (Address[]) Manager.participants.get().stream()
                                 .map(p -> new Address(p.host(), p.port() + 100 )).toArray();
 
@@ -62,11 +59,16 @@ public class Manager {
         int size = participants.length;
 
         tc.execute(() -> {
+            AtomicInteger commits = new AtomicInteger(0);
             c.handler(ManagerAbortRep.class, (s, m) -> {
-
+                if (commits.incrementAndGet() == size) {
+                    log.append(new ManagerComplete(current));
+                }
             });
             c.handler(ManagerCommitRep.class, (s, m) -> {
-
+                if (commits.incrementAndGet() == size) {
+                    log.append(new ManagerComplete(current));
+                }
             });
             c.handler(ManagerPreparedRep.class, (s, m) -> {
                 if (m.isOk())
@@ -76,13 +78,13 @@ public class Manager {
 
                 if (ready.size() == size) {
                     if (ready.values().stream().allMatch(Boolean::valueOf)) {
-                        broadcast(c, size, new ManagerCommitReq());
                         log.append(new ManagerCommitReq());
+                        broadcast(c, size, new ManagerCommitReq());
                     } else {
+                        log.append(new ManagerAbortReq());
                         ready.keySet().stream()
                                       .filter(ready::get)
                                       .forEach(i -> c.send(i, new ManagerAbortReq()));
-                        log.append(new ManagerAbortReq());
                     }
                 }
             });
@@ -125,5 +127,110 @@ public class Manager {
     private static void broadcast(Clique c, int size, Object o) {
         IntStream.range(0, size)
                 .forEach(i -> c.send(i, o));
+    }
+
+    public void recover() {
+        tc.execute(() -> {
+            log.handler(ManagerAddResourceReq.class, (i, req) -> {
+                int xid = req.getContext().getContextId();
+                Transaction t = logTransactions.get(xid);
+
+                if (t == null) {
+                    t = new Transaction(req.getContext());
+                    logTransactions.put(xid, t);
+                }
+
+                t.add(req.getReference());
+            });
+            log.handler(ManagerCommitReq.class, (i, req) -> {
+               int xid = req.getContext().getContextId();
+               Transaction t = logTransactions.get(xid);
+
+               t.setCommit();
+            });
+            log.handler(ManagerAbortReq.class, (i, req) -> {
+                int xid = req.getContext().getContextId();
+                Transaction t = logTransactions.get(xid);
+
+                t.setAbort();
+            });
+            log.handler(ManagerComplete.class, (i, comp) -> {
+                int xid = comp.getContext().getContextId();
+                Transaction t = logTransactions.get(xid);
+
+                t.apply();
+            });
+
+            log.open().thenRun(() -> {
+                logTransactions.values()
+                                .stream()
+                                .filter(t -> t.stateIs(Transaction.State.BEGIN)
+                                          || t.stateIs(Transaction.State.ABORT))
+                                .forEach(Transaction::abort);
+
+                logTransactions.values()
+                        .stream()
+                        .filter(t -> t.stateIs(Transaction.State.COMMIT))
+                        .forEach(Transaction::commit);
+            });
+        });
+    }
+
+    public static class Transaction {
+        public Context context;
+        public List<Address> addresses;
+
+        public enum State {BEGIN, COMMIT, ABORT, COMPLETE}
+        private State state;
+
+        public Transaction(Context context) {
+            this.context = context;
+            this.state = State.BEGIN;
+            addresses = new ArrayList<>();
+            addresses.add(address);
+        }
+
+        public void add(Reference ref) {
+            addresses.add(ref.getAddress());
+        }
+
+        public void setCommit() {
+            state = State.COMMIT;
+        }
+
+        public void setAbort() {
+            state = State.ABORT;
+        }
+
+        public void commit() {
+            participants.set(addresses);
+            Manager.commit();
+        }
+
+        public void abort() {
+            Clique c = new Clique(t, 0, (Address[]) addresses.toArray());
+            broadcast(c, addresses.size(), new ManagerAbortReq());
+        }
+
+        public void apply() {
+            state = State.COMPLETE;
+        }
+
+
+        public boolean stateIs(State s) {
+            return state == s;
+        }
+    }
+
+    private static class ManagerComplete {
+        private Context context;
+
+        private ManagerComplete(Context context) {
+            this.context = context;
+        }
+
+        public Context getContext() {
+            return context;
+        }
     }
 }

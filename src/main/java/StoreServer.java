@@ -31,6 +31,7 @@ public class StoreServer extends Server {
         StoreServer srv = new StoreServer(store, address, "store");
         srv.objs.exportObject(Store.class, (Exportable) store);
 
+        srv.start();
         System.out.println("Server ready on " + address.toString() + ".");
     }
 
@@ -175,6 +176,11 @@ public class StoreServer extends Server {
         tc.serializer().register(CartAddRep.class);
         tc.serializer().register(CartBuyReq.class);
         tc.serializer().register(CartBuyRep.class);
+    }
+
+    @Override
+    public void registerLogHandlers() {
+
     }
 
     private static Bank lookupBank() {

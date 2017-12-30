@@ -127,4 +127,26 @@ public class BankServer extends Server {
         tc.serializer().register(AccountCreditReq.class);
         tc.serializer().register(AccountCreditRep.class);
     }
+
+    @Override
+    public void registerLogHandlers() {
+        logHandler(BankMakeAccountReq.class, req -> {
+            Bank b = (Bank) objs.get(req.getBankId());
+
+            Account acc = b.newAccount(req.getInitialBalance());
+            objs.exportObject(Account.class, (Exportable) acc);
+        });
+        logHandler(AccountCreditReq.class, req -> {
+            Account acc = (Account) objs.get(req.getAccountId());
+            acc.credit(req.getAmount());
+        });
+        logHandler(AccountDebitReq.class, req -> {
+            Account acc = (Account) objs.get(req.getAccountId());
+            acc.debit(req.getAmount());
+        });
+        logHandler(AccountTransferReq.class, req -> {
+            Account acc = (Account) objs.get(req.getAccountId());
+            acc.debit(req.getAmount());
+        });
+    }
 }

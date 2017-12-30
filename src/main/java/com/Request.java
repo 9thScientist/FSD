@@ -1,30 +1,33 @@
-package com.transactions;
+package com;
 
-import com.Request;
 import io.atomix.catalyst.buffer.BufferInput;
 import io.atomix.catalyst.buffer.BufferOutput;
 import io.atomix.catalyst.serializer.CatalystSerializable;
 import io.atomix.catalyst.serializer.Serializer;
 import rmi.Context;
-import rmi.Manager;
 
-public class ManagerAbortReq extends Request implements CatalystSerializable {
+public abstract class Request implements CatalystSerializable {
+    private Context context;
 
-    public ManagerAbortReq() {
+    public Request() {
 
     }
 
-    public ManagerAbortReq(Context context) {
-        super(context);
+    public Request(Context context) {
+        this.context = context;
+    }
+
+    public Context getContext() {
+        return context;
     }
 
     @Override
     public void writeObject(BufferOutput<?> bufferOutput, Serializer serializer) {
-        super.writeObject(bufferOutput, serializer);
+        serializer.writeObject(context, bufferOutput);
     }
 
     @Override
     public void readObject(BufferInput<?> bufferInput, Serializer serializer) {
-        super.readObject(bufferInput, serializer);
+        context = serializer.readObject(bufferInput);
     }
 }

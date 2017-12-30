@@ -6,9 +6,8 @@ import io.atomix.catalyst.serializer.CatalystSerializable;
 import io.atomix.catalyst.serializer.Serializer;
 import rmi.Context;
 
-public class SaleIsPaidReq implements CatalystSerializable {
+public class SaleIsPaidReq extends Request implements CatalystSerializable {
     private int saleId;
-    private Context context;
 
     private SaleIsPaidReq() {
     }
@@ -17,24 +16,20 @@ public class SaleIsPaidReq implements CatalystSerializable {
         return saleId;
     }
 
-    public Context getContext() {
-        return context;
-    }
-
     public SaleIsPaidReq(int saleId, Context context) {
+        super(context);
         this.saleId = saleId;
-        this.context = context;
     }
 
     @Override
     public void writeObject(BufferOutput<?> bufferOutput, Serializer serializer) {
         bufferOutput.writeInt(saleId);
-        serializer.writeObject(context, bufferOutput);
+        super.writeObject(bufferOutput, serializer);
     }
 
     @Override
     public void readObject(BufferInput<?> bufferInput, Serializer serializer) {
         saleId = bufferInput.readInt();
-        context = serializer.readObject(bufferInput);
+        super.readObject(bufferInput, serializer);
     }
 }

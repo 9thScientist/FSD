@@ -81,7 +81,7 @@ public class StoreImpl extends Exportable implements Store {
         }
 
         public Sale buy(Account client) {
-            SaleImpl s = new SaleImpl(wishes);
+            SaleImpl s = (SaleImpl) toSale();
 
             history.add(s);
 
@@ -90,6 +90,10 @@ public class StoreImpl extends Exportable implements Store {
 
             wishes.clear();
             return s;
+        }
+
+        public Sale toSale() {
+            return new SaleImpl(wishes);
         }
 
         private void setWishes(List<Book> wishes) {

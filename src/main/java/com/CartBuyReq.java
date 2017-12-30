@@ -8,18 +8,17 @@ import io.atomix.catalyst.serializer.Serializer;
 import rmi.Context;
 import rmi.Reference;
 
-public class CartBuyReq implements CatalystSerializable {
+public class CartBuyReq extends Request implements CatalystSerializable {
     private Reference<Account> clientAccount;
     private int cartId;
-    private Context context;
 
     private CartBuyReq() {
     }
 
     public CartBuyReq(Reference<Account> clientAccount, int cartId, Context context) {
+        super(context);
         this.clientAccount = clientAccount;
         this.cartId = cartId;
-        this.context = context;
     }
 
     public Reference<Account> getClientAccount() {
@@ -30,21 +29,17 @@ public class CartBuyReq implements CatalystSerializable {
         return cartId;
     }
 
-    public Context getContext() {
-        return context;
-    }
-
     @Override
     public void writeObject(BufferOutput<?> bufferOutput, Serializer serializer) {
         bufferOutput.writeInt(cartId);
         serializer.writeObject(clientAccount, bufferOutput);
-        serializer.writeObject(context, bufferOutput);
+        super.writeObject(bufferOutput, serializer);
     }
 
     @Override
     public void readObject(BufferInput<?> bufferInput, Serializer serializer) {
         cartId = bufferInput.readInt();
         clientAccount = serializer.readObject(bufferInput);
-        context = serializer.readObject(bufferInput);
+        super.readObject(bufferInput, serializer);
     }
 }

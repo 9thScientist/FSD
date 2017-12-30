@@ -7,18 +7,17 @@ import io.atomix.catalyst.serializer.CatalystSerializable;
 import io.atomix.catalyst.serializer.Serializer;
 import rmi.Context;
 
-public class CartAddReq implements CatalystSerializable {
+public class CartAddReq extends Request implements CatalystSerializable {
     private int cartId;
     private Book book;
-    private Context context;
 
     private CartAddReq() {
     }
 
     public CartAddReq(int cartId, Book book, Context context) {
+        super(context);
         this.cartId = cartId;
         this.book = book;
-        this.context = context;
     }
 
     public Book getBook() {
@@ -29,21 +28,17 @@ public class CartAddReq implements CatalystSerializable {
         return cartId;
     }
 
-    public Context getContext() {
-        return context;
-    }
-
     @Override
     public void writeObject(BufferOutput<?> bufferOutput, Serializer serializer) {
         bufferOutput.writeInt(cartId);
         serializer.writeObject(book, bufferOutput);
-        serializer.writeObject(context, bufferOutput);
+        super.writeObject(bufferOutput, serializer);
     }
 
     @Override
     public void readObject(BufferInput<?> bufferInput, Serializer serializer) {
         cartId = bufferInput.readInt();
         book = serializer.readObject(bufferInput);
-        context = serializer.readObject(bufferInput);
+        super.readObject(bufferInput, serializer);
     }
 }

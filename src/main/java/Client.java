@@ -1,4 +1,5 @@
 import business.Book;
+import business.StoreImpl;
 import interfaces.*;
 import io.atomix.catalyst.concurrent.SingleThreadContext;
 import io.atomix.catalyst.concurrent.ThreadContext;
@@ -11,7 +12,9 @@ import remote.RemoteBank;
 import remote.RemoteStore;
 import rmi.Reference;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Client {
     public static Store lookupStore() {
@@ -19,6 +22,7 @@ public class Client {
         Transport t = new NettyTransport();
         Address addr = new Address("localhost:11191");
         Reference<Store> ref = new Reference<>(addr, 1, Store.class);
+
         Connection c;
 
         try {
@@ -55,6 +59,16 @@ public class Client {
     public static void main(String[] args) {
         Store store = lookupStore();
         Bank bank = lookupBank();
+
+        Map<Class<? extends Object>, Integer> map = new HashMap<>();
+        map.put(Resource.class, 2);
+        map.put(Bank.class, 0);
+        map.put(Store.class, 1);
+        map.put(StoreImpl.class, 3);
+        map.put(RemoteStore.class, 4);
+        System.out.println(map.get(bank.getClass()));
+        System.out.println(map.get(((Resource) bank).getClass()));
+        System.out.println(map.get(((Resource)store).getClass()));
 
         Book b = store.search("The buisness.Book Thief");
         System.out.println("Found book: " + b.getTitle());

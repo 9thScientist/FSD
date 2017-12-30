@@ -8,33 +8,33 @@ import io.atomix.catalyst.transport.Address;
 
 public class Context implements CatalystSerializable {
     private Address address;
-    private int contenxtId;
+    private int contextId;
 
     private Context() {
     }
 
-    public Context(Address address, int contenxtId) {
+    public Context(Address address, int contextId) {
         this.address = address;
-        this.contenxtId = contenxtId;
+        this.contextId = contextId;
     }
 
     public Address getAddress() {
         return address;
     }
 
-    public int getContenxtId() {
-        return contenxtId;
+    public int getContextId() {
+        return contextId;
     }
 
     @Override
     public void writeObject(BufferOutput<?> bufferOutput, Serializer serializer) {
-        bufferOutput.writeInt(contenxtId);
+        bufferOutput.writeInt(contextId);
         serializer.writeObject(address, bufferOutput);
     }
 
     @Override
     public void readObject(BufferInput<?> bufferInput, Serializer serializer) {
-        contenxtId = bufferInput.readInt();
+        contextId = bufferInput.readInt();
         address = serializer.readObject(bufferInput);
     }
 }
