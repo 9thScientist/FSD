@@ -10,6 +10,7 @@ import io.atomix.catalyst.transport.Transport;
 import io.atomix.catalyst.transport.netty.NettyTransport;
 import remote.RemoteBank;
 import remote.RemoteStore;
+import rmi.Manager;
 import rmi.Reference;
 
 import java.util.HashMap;
@@ -26,7 +27,7 @@ public class Client {
         Connection c;
 
         try {
-            c = (Connection) tc.execute(() ->
+            c = tc.execute(() ->
                     t.client().connect(addr)
             ).join().get();
 
@@ -57,18 +58,10 @@ public class Client {
     }
 
     public static void main(String[] args) {
+        Manager.recover();
+        
         Store store = lookupStore();
         Bank bank = lookupBank();
-
-        Map<Class<? extends Object>, Integer> map = new HashMap<>();
-        map.put(Resource.class, 2);
-        map.put(Bank.class, 0);
-        map.put(Store.class, 1);
-        map.put(StoreImpl.class, 3);
-        map.put(RemoteStore.class, 4);
-        System.out.println(map.get(bank.getClass()));
-        System.out.println(map.get(((Resource) bank).getClass()));
-        System.out.println(map.get(((Resource)store).getClass()));
 
         Book b = store.search("The buisness.Book Thief");
         System.out.println("Found book: " + b.getTitle());

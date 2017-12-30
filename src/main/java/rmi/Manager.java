@@ -1,5 +1,6 @@
 package rmi;
 
+import com.transactions.ManagerAskReq;
 import com.transactions.*;
 import io.atomix.catalyst.concurrent.SingleThreadContext;
 import io.atomix.catalyst.concurrent.ThreadContext;
@@ -22,8 +23,8 @@ public class Manager {
             new ThreadLocal<>();
     private static final ThreadLocal<List<Address>> participants =
             new ThreadLocal<>().withInitial(ArrayList::new);
-    private Map<Integer, Transaction> logTransactions = new HashMap<>();
-    private static final Log log = new Log("Manager" + Manager.context.get());
+    private static Map<Integer, Transaction> logTransactions = new HashMap<>();
+    private static final Log log = new Log("Manager");
 
     private static ThreadContext tc = new SingleThreadContext("mngr-%d", new Serializer());
     private static Transport t = new NettyTransport();
@@ -60,6 +61,16 @@ public class Manager {
 
         tc.execute(() -> {
             AtomicInteger commits = new AtomicInteger(0);
+            c.handler(ManagerAskReq.class, (s, m) -> {
+                int xid = m.getContext().getContextId();
+                Transaction t = logTransactions.get(xid);
+
+                boolean r = false;
+                if (t.stateIs(Transaction.State.COMMIT))
+                    r = true;
+
+                c.send(s, new ManagerAskRep(r, m.getContext()));
+            });
             c.handler(ManagerAbortRep.class, (s, m) -> {
                 if (commits.incrementAndGet() == size) {
                     log.append(new ManagerComplete(current));
@@ -129,7 +140,7 @@ public class Manager {
                 .forEach(i -> c.send(i, o));
     }
 
-    public void recover() {
+    public static void recover() {
         tc.execute(() -> {
             log.handler(ManagerAddResourceReq.class, (i, req) -> {
                 int xid = req.getContext().getContextId();

@@ -17,8 +17,8 @@ public class StoreImpl extends Exportable implements Store {
 
     }
 
-    public StoreImpl(Bank b) {
-        storeAccount = b.newAccount(1000);
+    public StoreImpl(Account acc) {
+        storeAccount = acc;
 
         collection.put(1, new Book(1, 5, "Lev Tolstoy", "The Death of Ivan Ilyich"));
         collection.put(2, new Book(2, 10, "Haruki Murakami", "Kafka on the Shore"));

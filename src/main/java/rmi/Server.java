@@ -1,5 +1,6 @@
 package rmi;
 
+import com.transactions.ManagerAskRep;
 import com.Request;
 import com.transactions.*;
 import io.atomix.catalyst.concurrent.SingleThreadContext;
@@ -19,7 +20,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 public abstract class Server {
-    private Map<Integer, Transaction> logTransactions;
+    private Map<Integer, Transaction> logTransactions = new HashMap<>();
     private final Map<Class<? extends Request>, Consumer<Object>> handlers = new HashMap();
     private Address addr;
     protected DistributedObject objs;
@@ -35,7 +36,8 @@ public abstract class Server {
         objs = new DistributedObject(addr);
         log = new Log(logName);
 
-        registerMessages();
+        registerMessages(tc.serializer());
+        registerLogHandlers(objs);
     }
 
     public void startTransaction(Exportable obj, CatalystSerializable request) {
@@ -65,6 +67,7 @@ public abstract class Server {
                rollback(save);
 
                c.send(1, new ManagerAbortRep());
+               c.close();
             });
             c.handler(ManagerCommitReq.class, (s, m) -> {
                 log.append(m);
@@ -72,6 +75,7 @@ public abstract class Server {
                 Manager.setContext(null);
 
                 c.send(1, new ManagerCommitRep());
+                c.close();
             });
             c.handler(ManagerPreparedReq.class, (s, m) -> {
                 log.append(m);
@@ -94,7 +98,7 @@ public abstract class Server {
                 int xid = commit.getContext().getContextId();
                 Transaction t = logTransactions.get(xid);
 
-                t.apply();
+                t.commit();
             });
 
             for(Class<? extends Request> cls: handlers.keySet())
@@ -111,7 +115,9 @@ public abstract class Server {
                 });
 
             log.open().thenRun(() -> {
-
+                logTransactions.values().stream()
+                        .filter(Transaction::isIncomplete)
+                        .forEach(Transaction::askManager);
             });
         });
     }
@@ -120,9 +126,9 @@ public abstract class Server {
 
     protected abstract void rollback(List<Object> save);
 
-    public abstract void registerMessages();
+    public abstract void registerMessages(Serializer serializer);
 
-    public abstract void registerLogHandlers();
+    public abstract void registerLogHandlers(DistributedObject objs);
 
     public <T extends Request> void logHandler(Class<T> type, Consumer<T> rh) {
         handlers.put(type, r ->  rh.accept(type.cast(r)) );
@@ -137,29 +143,62 @@ public abstract class Server {
     private class Transaction {
         private Context ctx;
         private List<Request> requests = new ArrayList<>();
-        private boolean prepared = false;
+        private boolean prepared = false, committed = false;
 
         Transaction(Context ctx) {
             this.ctx = ctx;
+        }
+
+        public Context getContext() {
+            return ctx;
         }
 
         public void add(Request req) {
             requests.add(req);
         }
 
-        public void apply() {
+        public void commit() {
+            committed = true;
+
             for(Request req: requests) {
                 Consumer<Object> handler = handlers.get(req.getClass());
                 if (handler != null)
                     handler.accept(req);
             }
-        };
+        }
 
         public void prepare() {
             prepared = true;
         }
 
+        public boolean isIncomplete() {
+            return prepared && !committed;
+        }
+
         public void askManager() {
+            Address[] addresses = new Address[] {
+                new Address(addr.host(), addr.port() + 100),
+                ctx.getAddress()
+            };
+
+            tc.execute(() -> {
+                Clique c = new Clique(t, 0, addresses);
+
+                c.handler(ManagerAskRep.class, (s, r) -> {
+                    int xid = r.getContext().getContextId();
+                    Transaction t = logTransactions.get(xid);
+
+                    if (r.isCommit())
+                        t.commit();
+
+                    c.close();
+                });
+
+                c.open().thenRun(() ->{
+                    c.send(1, new ManagerAskReq(ctx));
+                });
+            });
+
         }
     }
 }

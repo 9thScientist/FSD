@@ -10,9 +10,11 @@ import io.atomix.catalyst.transport.Address;
 import io.atomix.catalyst.transport.Connection;
 import io.atomix.catalyst.transport.Transport;
 import io.atomix.catalyst.transport.netty.NettyTransport;
+import remote.RemoteAccount;
 import remote.RemoteBank;
 import rmi.*;
 
+import java.io.*;
 import java.util.List;
 
 public class StoreServer extends Server {
@@ -24,13 +26,14 @@ public class StoreServer extends Server {
     }
 
     public static void main(String[] args) {
-        Bank b = lookupBank();
-        Store store = new StoreImpl(b);
+        Account acc = getBankAccount();
+        Store store = new StoreImpl(acc);
         Address address = new Address("localhost:11191");
 
         StoreServer srv = new StoreServer(store, address, "store");
         srv.objs.exportObject(Store.class, (Exportable) store);
 
+        srv.recover();
         srv.start();
         System.out.println("Server ready on " + address.toString() + ".");
     }
@@ -73,7 +76,7 @@ public class StoreServer extends Server {
                     Manager.setContext(m.getContext());
 
                     if (m.getContext() != null)
-                        startTransaction((Exportable) store, null);
+                        startTransaction((Exportable) store, m);
 
                     Cart cart =  store.newCart();
                     Reference<Cart> ref = objs.exportObject(Cart.class, (Exportable) cart);
@@ -103,7 +106,7 @@ public class StoreServer extends Server {
                     Manager.setContext(m.getContext());
 
                     if (m.getContext() != null)
-                        startTransaction((Exportable) cart, null);
+                        startTransaction((Exportable) cart, m);
 
                     Book book = m.getBook();
                     cart.add(book);
@@ -116,7 +119,7 @@ public class StoreServer extends Server {
                     Manager.setContext(m.getContext());
 
                     if (m.getContext() != null)
-                        startTransaction((Exportable) cart, null);
+                        startTransaction((Exportable) cart, m);
 
                     Account clientAccount = DistributedObject.importObject(m.getClientAccount());
                     Sale sale = cart.buy(clientAccount);
@@ -156,31 +159,44 @@ public class StoreServer extends Server {
         });
     }
 
-    public void registerMessages() {
-        tc.serializer().register(Reference.class);
-        tc.serializer().register(Context.class);
+    public void registerMessages(Serializer serializer) {
+        serializer.register(Reference.class);
+        serializer.register(Context.class);
 
-        tc.serializer().register(StoreGetHistoryReq.class);
-        tc.serializer().register(StoreGetHistoryRep.class);
-        tc.serializer().register(StoreMakeCartReq.class);
-        tc.serializer().register(StoreMakeCartRep.class);
-        tc.serializer().register(StoreSearchReq.class);
-        tc.serializer().register(StoreSearchRep.class);
+        serializer.register(StoreGetHistoryReq.class);
+        serializer.register(StoreGetHistoryRep.class);
+        serializer.register(StoreMakeCartReq.class);
+        serializer.register(StoreMakeCartRep.class);
+        serializer.register(StoreSearchReq.class);
+        serializer.register(StoreSearchRep.class);
 
-        tc.serializer().register(SaleGetSoldReq.class);
-        tc.serializer().register(SaleGetSoldRep.class);
-        tc.serializer().register(SaleIsPaidReq.class);
-        tc.serializer().register(SaleIsPaidRep.class);
+        serializer.register(SaleGetSoldReq.class);
+        serializer.register(SaleGetSoldRep.class);
+        serializer.register(SaleIsPaidReq.class);
+        serializer.register(SaleIsPaidRep.class);
 
-        tc.serializer().register(CartAddReq.class);
-        tc.serializer().register(CartAddRep.class);
-        tc.serializer().register(CartBuyReq.class);
-        tc.serializer().register(CartBuyRep.class);
+        serializer.register(CartAddReq.class);
+        serializer.register(CartAddRep.class);
+        serializer.register(CartBuyReq.class);
+        serializer.register(CartBuyRep.class);
     }
 
     @Override
-    public void registerLogHandlers() {
-
+    public void registerLogHandlers(DistributedObject objs) {
+        logHandler(StoreMakeCartReq.class, req -> {
+            Store store = (Store) objs.get(req.getStoreId());
+            Cart cart = store.newCart();
+            objs.exportObject(Cart.class, (Exportable) cart);
+        });
+        logHandler(CartAddReq.class, req -> {
+            Cart cart = (Cart) objs.get(req.getCartId());
+            cart.add(req.getBook());
+        });
+        logHandler(CartBuyReq.class, req -> {
+            StoreImpl.CartImpl cart = (StoreImpl.CartImpl) objs.get(req.getCartId());
+            Sale s = cart.toSale();
+            objs.exportObject(Sale.class, (Exportable) s);
+        });
     }
 
     private static Bank lookupBank() {
@@ -202,4 +218,36 @@ public class StoreServer extends Server {
         }
     }
 
+    public static Account getBankAccount() {
+        Bank b = lookupBank();
+        File account = new File("accountId");
+        ThreadContext tc = new SingleThreadContext("s-%d", new Serializer());
+        Transport t = new NettyTransport();
+        Address addr = new Address("localhost:11192");
+
+        try {
+            if (account.exists()) {
+                BufferedReader r = new BufferedReader(new FileReader("accountId"));
+                String s = r.readLine();
+                int accountId = Integer.parseInt(s);
+
+                Reference<Account> ref = new Reference<>(addr, 1, Account.class);
+                Connection c = tc.execute(() ->
+                        t.client().connect(addr)
+                ).join().get();
+
+                return new RemoteAccount(tc, c, 1, ref);
+            } else {
+                RemoteAccount acc = (RemoteAccount) b.newAccount(1000);
+                BufferedWriter bw = new BufferedWriter(new FileWriter("accountId"));
+                bw.write(acc.getReference().getId());
+                bw.close();
+
+                return acc;
+            }
+        } catch(Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

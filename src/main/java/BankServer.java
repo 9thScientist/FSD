@@ -2,6 +2,7 @@ import business.BankImpl;
 import com.*;
 import interfaces.*;
 import io.atomix.catalyst.concurrent.Futures;
+import io.atomix.catalyst.serializer.Serializer;
 import io.atomix.catalyst.transport.Address;
 import io.atomix.catalyst.transport.Transport;
 import rmi.*;
@@ -23,6 +24,7 @@ public class BankServer extends Server {
         BankServer srv = new BankServer(bank, address, "bank");
         srv.objs.exportObject(Bank.class, (Exportable) bank);
 
+        srv.recover();
         srv.start();
         System.out.println("Server ready on " + address + ".");
     }
@@ -112,24 +114,24 @@ public class BankServer extends Server {
         });
     }
 
-    public void registerMessages() {
-        tc.serializer().register(Reference.class);
-        tc.serializer().register(Context.class);
+    public void registerMessages(Serializer serializer) {
+        serializer.register(Reference.class);
+        serializer.register(Context.class);
 
-        tc.serializer().register(BankMakeAccountReq.class);
-        tc.serializer().register(BankMakeAccountRep.class);
-        tc.serializer().register(AccountTransferReq.class);
-        tc.serializer().register(AccountTransferRep.class);
-        tc.serializer().register(AccountGetTransactionsReq.class);
-        tc.serializer().register(AccountGetTransactionsRep.class);
-        tc.serializer().register(AccountDebitReq.class);
-        tc.serializer().register(AccountDebitRep.class);
-        tc.serializer().register(AccountCreditReq.class);
-        tc.serializer().register(AccountCreditRep.class);
+        serializer.register(BankMakeAccountReq.class);
+        serializer.register(BankMakeAccountRep.class);
+        serializer.register(AccountTransferReq.class);
+        serializer.register(AccountTransferRep.class);
+        serializer.register(AccountGetTransactionsReq.class);
+        serializer.register(AccountGetTransactionsRep.class);
+        serializer.register(AccountDebitReq.class);
+        serializer.register(AccountDebitRep.class);
+        serializer.register(AccountCreditReq.class);
+        serializer.register(AccountCreditRep.class);
     }
 
     @Override
-    public void registerLogHandlers() {
+    public void registerLogHandlers(DistributedObject objs) {
         logHandler(BankMakeAccountReq.class, req -> {
             Bank b = (Bank) objs.get(req.getBankId());
 
