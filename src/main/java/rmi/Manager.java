@@ -41,8 +41,17 @@ public class Manager {
             t.server().listen(address, c ->
                     c.handler(ManagerAddResourceReq.class, m -> {
                         participants.get().add(m.getReference().getAddress());
-
                         log.append(m);
+
+                        int xid = m.getContext().getContextId();
+                        Transaction t = logTransactions.get(xid);
+
+                        if (t == null) {
+                            t = new Transaction(m.getContext());
+                            logTransactions.put(xid, t);
+                        }
+
+                        t.add(m.getReference());
                     }));
         });
 
@@ -65,20 +74,24 @@ public class Manager {
                 int xid = m.getContext().getContextId();
                 Transaction t = logTransactions.get(xid);
 
-                boolean r = false;
-                if (t.stateIs(Transaction.State.COMMIT))
-                    r = true;
+                boolean r = t.stateIs(Transaction.State.COMMIT);
 
                 c.send(s, new ManagerAskRep(r, m.getContext()));
             });
             c.handler(ManagerAbortRep.class, (s, m) -> {
                 if (commits.incrementAndGet() == size) {
                     log.append(new ManagerComplete(current));
+
+                    Transaction t = logTransactions.get(current.getContextId());
+                    t.apply();
                 }
             });
             c.handler(ManagerCommitRep.class, (s, m) -> {
                 if (commits.incrementAndGet() == size) {
                     log.append(new ManagerComplete(current));
+
+                    Transaction t = logTransactions.get(current.getContextId());
+                    t.apply();
                 }
             });
             c.handler(ManagerPreparedRep.class, (s, m) -> {
@@ -91,11 +104,17 @@ public class Manager {
                     if (ready.values().stream().allMatch(Boolean::valueOf)) {
                         log.append(new ManagerCommitReq());
                         broadcast(c, size, new ManagerCommitReq());
+
+                        Transaction t = logTransactions.get(current.getContextId());
+                        t.setCommit();
                     } else {
                         log.append(new ManagerAbortReq());
                         ready.keySet().stream()
                                       .filter(ready::get)
                                       .forEach(i -> c.send(i, new ManagerAbortReq()));
+
+                        Transaction t = logTransactions.get(current.getContextId());
+                        t.setAbort();
                     }
                 }
             });
@@ -202,7 +221,8 @@ public class Manager {
         }
 
         public void add(Reference ref) {
-            addresses.add(ref.getAddress());
+            Address addrs = ref.getAddress();
+            addresses.add(new Address(addrs.host(), addrs.port() + 100));
         }
 
         public void setCommit() {
