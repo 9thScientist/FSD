@@ -24,9 +24,6 @@ public class RemoteStore extends Remote implements Store {
         try {
             Context ctx = Manager.getContext();
 
-            if (ctx != null)
-                Manager.add(ctx, getReference());
-
             StoreSearchRep r = (StoreSearchRep) tc.execute(() ->
                 c.sendAndReceive(new StoreSearchReq(title, id, ctx))
             ).join().get();
@@ -43,9 +40,6 @@ public class RemoteStore extends Remote implements Store {
         try {
             Context ctx = Manager.getContext();
 
-            if (ctx != null)
-                Manager.add(ctx, getReference());
-
             StoreGetHistoryRep r = (StoreGetHistoryRep) tc.execute(() ->
                 c.sendAndReceive(new StoreGetHistoryReq(id, ctx))
             ).join().get();
@@ -61,9 +55,6 @@ public class RemoteStore extends Remote implements Store {
     public Cart newCart() {
         try {
             Context ctx = Manager.getContext();
-
-            if (ctx != null)
-                Manager.add(ctx, getReference());
 
             StoreMakeCartRep r = (StoreMakeCartRep) tc.execute(() ->
                     c.sendAndReceive(new StoreMakeCartReq(id, ctx))

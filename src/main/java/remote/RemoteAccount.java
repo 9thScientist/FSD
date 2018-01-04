@@ -21,18 +21,14 @@ public class RemoteAccount extends Remote implements Account {
         try {
             Context ctx = Manager.getContext();
 
-            if (ctx != null)
-                Manager.add(ctx, getReference());
-
             AccountCreditRep r = (AccountCreditRep) tc.execute(() ->
-                c.sendAndReceive(new AccountCreditReq(amount, id, ctx))
+                c.sendAndReceive(new AccountCreditReq(id, amount, ctx))
             ).join().get();
-
-            return;
         } catch(Exception e) {
             e.printStackTrace();
-            return;
         }
+
+        return;
     }
 
     @Override
@@ -40,27 +36,20 @@ public class RemoteAccount extends Remote implements Account {
         try {
             Context ctx = Manager.getContext();
 
-            if (ctx != null)
-                Manager.add(ctx, getReference());
-
             AccountDebitRep r = (AccountDebitRep) tc.execute(() ->
-                    c.sendAndReceive(new AccountDebitReq(amount, id, ctx))
+                    c.sendAndReceive(new AccountDebitReq(id, amount, ctx))
             ).join().get();
-
-            return;
         } catch(Exception e) {
             e.printStackTrace();
-            return;
         }
+
+        return;
     }
 
     @Override
     public List<Integer> getTransactions() {
         try {
             Context ctx = Manager.getContext();
-
-            if (ctx != null)
-                Manager.add(ctx, getReference());
 
             AccountGetTransactionsRep r = (AccountGetTransactionsRep) tc.execute(() ->
                     c.sendAndReceive(new AccountGetTransactionsReq(id, ctx))
@@ -79,9 +68,6 @@ public class RemoteAccount extends Remote implements Account {
             Reference toRef = ((RemoteAccount) to).getReference();
             Context ctx = Manager.getContext();
 
-            if (ctx != null)
-                Manager.add(ctx, getReference());
-
             AccountTransferRep r = (AccountTransferRep) tc.execute(() ->
                     c.sendAndReceive(new AccountTransferReq(id, toRef, amount, ctx))
             ).join().get();
@@ -95,7 +81,6 @@ public class RemoteAccount extends Remote implements Account {
 
     @Override
     public void registerMessages() {
-
         tc.serializer().register(AccountCreditReq.class);
         tc.serializer().register(AccountCreditRep.class);
         tc.serializer().register(AccountDebitReq.class);

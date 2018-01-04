@@ -21,9 +21,6 @@ public class RemoteBank extends Remote implements Bank {
         try {
             Context ctx = Manager.getContext();
 
-            if (ctx != null)
-                Manager.add(ctx, getReference());
-
             BankMakeAccountRep r = (BankMakeAccountRep) tc.execute(() ->
                     c.sendAndReceive(new BankMakeAccountReq(id, balance, ctx))
             ).join().get();

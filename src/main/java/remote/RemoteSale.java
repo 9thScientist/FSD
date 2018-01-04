@@ -29,9 +29,6 @@ public class RemoteSale extends Remote implements Sale {
         try {
             Context ctx = Manager.getContext();
 
-            if (ctx != null)
-                Manager.add(ctx, getReference());
-
             SaleGetSoldRep r = (SaleGetSoldRep) tc.execute(() ->
                     c.sendAndReceive(new SaleGetSoldReq(id, ctx))
             ).join().get();
@@ -48,9 +45,6 @@ public class RemoteSale extends Remote implements Sale {
     public boolean isPaid() {
         try {
             Context ctx = Manager.getContext();
-
-            if (ctx != null)
-                Manager.add(ctx, getReference());
 
             SaleIsPaidRep r = (SaleIsPaidRep) tc.execute(() ->
                     c.sendAndReceive(new SaleIsPaidReq(id, ctx))

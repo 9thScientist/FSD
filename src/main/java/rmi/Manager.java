@@ -1,7 +1,7 @@
 package rmi;
 
-import com.transactions.ManagerAskReq;
 import com.transactions.*;
+import io.atomix.catalyst.concurrent.Futures;
 import io.atomix.catalyst.concurrent.SingleThreadContext;
 import io.atomix.catalyst.concurrent.ThreadContext;
 import io.atomix.catalyst.serializer.Serializer;
@@ -12,7 +12,10 @@ import io.atomix.catalyst.transport.netty.NettyTransport;
 import pt.haslab.ekit.Clique;
 import pt.haslab.ekit.Log;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
@@ -24,7 +27,7 @@ public class Manager {
     private static final ThreadLocal<List<Address>> participants =
             new ThreadLocal<>().withInitial(ArrayList::new);
     private static Map<Integer, Transaction> logTransactions = new HashMap<>();
-    private static final Log log = new Log("Manager");
+    private static final Log log = new Log("manager");
 
     private static ThreadContext tc = new SingleThreadContext("mngr-%d", new Serializer());
     private static Transport t = new NettyTransport();
@@ -38,30 +41,32 @@ public class Manager {
         participants.get().add(address);
 
         tc.execute(() -> {
-            t.server().listen(address, c ->
-                    c.handler(ManagerAddResourceReq.class, m -> {
-                        participants.get().add(m.getReference().getAddress());
-                        log.append(m);
+            tc.serializer().register(ManagerAddResourceReq.class);
+            t.server().listen(address, c -> {
+                c.handler(ManagerAddResourceReq.class, m -> {
+                    System.out.println(m);
 
-                        int xid = m.getContext().getContextId();
-                        Transaction t = logTransactions.get(xid);
+                    int xid = m.getContext().getContextId();
+                    Transaction t = logTransactions.get(xid);
 
-                        if (t == null) {
-                            t = new Transaction(m.getContext());
-                            logTransactions.put(xid, t);
-                        }
+                    if (t == null) {
+                        t = new Transaction(m.getContext());
+                        logTransactions.put(xid, t);
+                    }
 
-                        t.add(m.getReference());
-                    }));
-        });
+                    t.add(m.getReference());
+                    return Futures.completedFuture(new ManagerAddResourceRep());
+                });
+            });
+        }).join();
 
         Manager.context.set(context);
     }
 
     public static void commit() {
         Context current = context.get();
-        Address[] participants = (Address[]) Manager.participants.get().stream()
-                                .map(p -> new Address(p.host(), p.port() + 100 )).toArray();
+        Address[] participants = Manager.participants.get().stream()
+                                .map(p -> new Address(p.host(), p.port() + 100 )).toArray(Address[]::new);
 
         Clique c = new Clique(t, 0, participants);
 
@@ -127,14 +132,20 @@ public class Manager {
         context.set(null);
     }
 
-    public static void add(Context ctx, Reference ref) throws Exception {
-        Connection c = tc.execute(() ->
-                t.client().connect(ctx.getAddress())
-        ).join().get();
+    public static void add(Context ctx, Reference ref) {
+        try {
+            Connection c = tc.execute(() -> {
+                System.out.println(ctx.getAddress());
+                return t.client().connect(ctx.getAddress());
+            }).join().get();
 
-        ManagerAddResourceRep r = (ManagerAddResourceRep) tc.execute(() ->
-                c.sendAndReceive(new ManagerAddResourceReq(ctx, ref))
-        ).join().get();
+            tc.serializer().register(ManagerAddResourceRep.class);
+            ManagerAddResourceRep r = (ManagerAddResourceRep) tc.execute(() ->
+                    c.sendAndReceive(new ManagerAddResourceReq(ctx, ref))
+            ).join().get();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static Address getAddress() {

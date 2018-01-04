@@ -1,5 +1,4 @@
 import business.Book;
-import business.StoreImpl;
 import interfaces.*;
 import io.atomix.catalyst.concurrent.SingleThreadContext;
 import io.atomix.catalyst.concurrent.ThreadContext;
@@ -13,9 +12,7 @@ import remote.RemoteStore;
 import rmi.Manager;
 import rmi.Reference;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class Client {
     public static Store lookupStore() {
@@ -57,7 +54,8 @@ public class Client {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+        Manager.setAddress(new Address("localhost:4000"));
         Manager.recover();
         
         Store store = lookupStore();
@@ -66,6 +64,7 @@ public class Client {
         Book b = store.search("The buisness.Book Thief");
         System.out.println("Found book: " + b.getTitle());
 
+        Manager.begin();
         Cart cart = store.newCart();
         System.out.println("Created cart: " + cart);
 
@@ -74,6 +73,7 @@ public class Client {
 
         Account acc = bank.newAccount(500);
         System.out.println("Created bank account: " + acc);
+        Manager.commit();
 
         cart.buy(acc);
         System.out.println("Bought books in my cart");

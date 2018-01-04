@@ -25,9 +25,6 @@ public class RemoteCart extends Remote implements Cart {
         try {
             Context ctx = Manager.getContext();
 
-            if (ctx != null)
-                Manager.add(ctx, getReference());
-
             CartAddRep r = (CartAddRep) tc.execute(() ->
                 c.sendAndReceive(new CartAddReq(id, b, ctx))
             ).join().get();
@@ -44,9 +41,6 @@ public class RemoteCart extends Remote implements Cart {
         try {
             Reference clientRef = ((RemoteAccount) from).getReference();
             Context ctx = Manager.getContext();
-
-            if (ctx != null)
-                Manager.add(ctx, getReference());
 
             CartBuyRep r = (CartBuyRep) tc.execute(() ->
                 c.sendAndReceive(new CartBuyReq(clientRef, id, ctx))

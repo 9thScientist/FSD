@@ -23,3 +23,8 @@ hs_err_pid*
 
 # IDE
 .idea
+
+accountId
+manager/
+store/
+bank/

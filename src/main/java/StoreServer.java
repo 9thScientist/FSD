@@ -231,7 +231,7 @@ public class StoreServer extends Server {
                 String s = r.readLine();
                 int accountId = Integer.parseInt(s);
 
-                Reference<Account> ref = new Reference<>(addr, 1, Account.class);
+                Reference<Account> ref = new Reference<>(addr, accountId, Account.class);
                 Connection c = tc.execute(() ->
                         t.client().connect(addr)
                 ).join().get();
@@ -240,7 +240,7 @@ public class StoreServer extends Server {
             } else {
                 RemoteAccount acc = (RemoteAccount) b.newAccount(1000);
                 BufferedWriter bw = new BufferedWriter(new FileWriter("accountId"));
-                bw.write(acc.getReference().getId());
+                bw.write(Integer.toString(acc.getReference().getId()));
                 bw.close();
 
                 return acc;

@@ -1,11 +1,9 @@
 package rmi;
 
-import com.transactions.ManagerAskRep;
-import com.Request;
 import com.transactions.*;
+import com.Request;
 import io.atomix.catalyst.concurrent.SingleThreadContext;
 import io.atomix.catalyst.concurrent.ThreadContext;
-import io.atomix.catalyst.serializer.CatalystSerializable;
 import io.atomix.catalyst.serializer.Serializer;
 import io.atomix.catalyst.transport.Address;
 import io.atomix.catalyst.transport.Transport;
@@ -36,12 +34,15 @@ public abstract class Server {
         objs = new DistributedObject(addr);
         log = new Log(logName);
 
+        tc.serializer().register(ManagerAddResourceReq.class);
+        tc.serializer().register(ManagerAddResourceRep.class);
         registerMessages(tc.serializer());
         registerLogHandlers(objs);
     }
 
-    public void startTransaction(Exportable obj, CatalystSerializable request) {
+    public void startTransaction(Exportable obj, Request request) {
         obj.lock();
+        Manager.add(request.getContext(), objs.exportObject(obj.getClass(), obj));
 
         if (request != null) {
             log.append(request);
@@ -51,7 +52,7 @@ public abstract class Server {
         handleManager(obj);
     }
 
-    public void handleManager(Exportable obj) {
+    private void handleManager(Exportable obj) {
         Context current = Manager.getContext();
         Address[] addresses = new Address[2];
         addresses[0] = new Address(addr.host(), addr.port() + 100 );
@@ -87,22 +88,25 @@ public abstract class Server {
     }
 
     public void recover() {
+        System.out.println("starting recoverng...");
         tc.execute(() -> {
             log.handler(ManagerPreparedReq.class, (id, prep) -> {
+                System.out.println("Found prepared");
                 int xid = prep.getContext().getContextId();
                 Transaction t = logTransactions.get(xid);
 
                 t.prepare();
             });
             log.handler(ManagerCommitReq.class, (id, commit) -> {
+                System.out.println("Found commit");
                 int xid = commit.getContext().getContextId();
                 Transaction t = logTransactions.get(xid);
 
                 t.commit();
             });
-
             for(Class<? extends Request> cls: handlers.keySet())
                 log.handler(cls, (id, req) -> {
+                    System.out.println("Found request: " + cls.getName());
                     int xid = req.getContext().getContextId();
                     Transaction t = logTransactions.get(xid);
 
