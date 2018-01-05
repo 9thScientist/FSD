@@ -18,6 +18,5 @@ public class ManagerCommitRep implements CatalystSerializable {
 
     @Override
     public void readObject(BufferInput<?> bufferInput, Serializer serializer) {
-
     }
 }

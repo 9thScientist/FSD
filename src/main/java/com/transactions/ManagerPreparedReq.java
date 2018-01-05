@@ -9,10 +9,13 @@ import rmi.Context;
 
 public class ManagerPreparedReq extends Request implements CatalystSerializable{
 
+    private int resourceId;
+
     public ManagerPreparedReq() {}
 
-    public ManagerPreparedReq(Context context) {
+    public ManagerPreparedReq(Context context, int resourceId) {
         super(context);
+        this.resourceId = resourceId;
     }
 
     @Override
@@ -23,5 +26,9 @@ public class ManagerPreparedReq extends Request implements CatalystSerializable{
     @Override
     public void readObject(BufferInput<?> bufferInput, Serializer serializer) {
         super.readObject(bufferInput, serializer);
+    }
+
+    public int getResourceId() {
+        return resourceId;
     }
 }

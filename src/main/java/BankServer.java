@@ -1,9 +1,9 @@
 import business.BankImpl;
 import com.*;
-import interfaces.*;
+import interfaces.Account;
+import interfaces.Bank;
 import io.atomix.catalyst.concurrent.Futures;
 import io.atomix.catalyst.serializer.Serializer;
-import io.atomix.catalyst.transport.Address;
 import io.atomix.catalyst.transport.Transport;
 import rmi.*;
 
@@ -12,19 +12,21 @@ import java.util.List;
 public class BankServer extends Server {
     private Bank bank;
 
-    BankServer(Bank bank, Address addr, String logName) {
+    BankServer(Bank bank, io.atomix.catalyst.transport.Address addr, String logName) {
         super(addr, logName);
         this.bank = bank;
     }
 
     public static void main(String[] args) {
-        Address address = new Address("localhost:11192");
+        io.atomix.catalyst.transport.Address address = new io.atomix.catalyst.transport.Address("localhost:11192");
         Bank bank = new BankImpl();
 
         BankServer srv = new BankServer(bank, address, "bank");
         srv.objs.exportObject(Bank.class, (Exportable) bank);
 
-        srv.recover().thenRun(srv::start);
+        srv.recover().thenRun(() -> {
+            srv.start();
+        });
     }
 
     public void backup(List<Object> save) {
@@ -37,7 +39,7 @@ public class BankServer extends Server {
         objs = (DistributedObject) save.get(1);
     }
 
-    public void run(Address address, Transport t) {
+    public void run(io.atomix.catalyst.transport.Address address, Transport t) {
         tc.execute(()-> {
             System.out.println("Server ready on " + address + ".");
             t.server().listen(address, (c)-> {
@@ -139,15 +141,21 @@ public class BankServer extends Server {
         });
         logHandler(AccountCreditReq.class, req -> {
             Account acc = (Account) objs.get(req.getAccountId());
-            acc.credit(req.getAmount());
+
+            if (acc != null)
+                acc.credit(req.getAmount());
         });
         logHandler(AccountDebitReq.class, req -> {
             Account acc = (Account) objs.get(req.getAccountId());
-            acc.debit(req.getAmount());
+
+            if (acc != null)
+                acc.debit(req.getAmount());
         });
         logHandler(AccountTransferReq.class, req -> {
             Account acc = (Account) objs.get(req.getAccountId());
-            acc.debit(req.getAmount());
+
+            if (acc != null)
+                acc.debit(req.getAmount());
         });
     }
 }

@@ -5,33 +5,33 @@ import io.atomix.catalyst.buffer.BufferInput;
 import io.atomix.catalyst.buffer.BufferOutput;
 import io.atomix.catalyst.serializer.CatalystSerializable;
 import io.atomix.catalyst.serializer.Serializer;
+import io.atomix.catalyst.transport.Address;
 import rmi.Context;
-import rmi.Reference;
 
 public class ManagerAddResourceReq extends Request implements CatalystSerializable {
-    private Reference reference;
+    private Address address;
 
     private ManagerAddResourceReq() {
     }
 
-    public ManagerAddResourceReq(Context context, Reference reference) {
+    public ManagerAddResourceReq(Context context, Address address) {
         super(context);
-        this.reference = reference;
+        this.address = address;
     }
 
-    public Reference getReference() {
-        return reference;
+    public Address getAddress() {
+        return address;
     }
 
     @Override
     public void writeObject(BufferOutput<?> bufferOutput, Serializer serializer) {
-        serializer.writeObject(reference, bufferOutput);
+        serializer.writeObject(address, bufferOutput);
         super.writeObject(bufferOutput, serializer);
     }
 
     @Override
     public void readObject(BufferInput<?> bufferInput, Serializer serializer) {
-        reference = serializer.readObject(bufferInput);
+        address = serializer.readObject(bufferInput);
         super.readObject(bufferInput, serializer);
     }
 }

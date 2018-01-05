@@ -6,13 +6,13 @@ import io.atomix.catalyst.concurrent.Futures;
 import io.atomix.catalyst.concurrent.SingleThreadContext;
 import io.atomix.catalyst.concurrent.ThreadContext;
 import io.atomix.catalyst.serializer.Serializer;
-import io.atomix.catalyst.transport.Address;
 import io.atomix.catalyst.transport.Connection;
 import io.atomix.catalyst.transport.Transport;
 import io.atomix.catalyst.transport.netty.NettyTransport;
 import remote.RemoteAccount;
 import remote.RemoteBank;
 import rmi.*;
+import rmi.Manager;
 
 import java.io.*;
 import java.util.List;
@@ -20,7 +20,7 @@ import java.util.List;
 public class StoreServer extends Server {
     private Store store;
 
-    public StoreServer(Store store, Address addr, String logName) {
+    public StoreServer(Store store, io.atomix.catalyst.transport.Address addr, String logName) {
         super(addr, logName);
         this.store = store;
     }
@@ -28,7 +28,7 @@ public class StoreServer extends Server {
     public static void main(String[] args) {
         Account acc = getBankAccount();
         Store store = new StoreImpl(acc);
-        Address address = new Address("localhost:11191");
+        io.atomix.catalyst.transport.Address address = new io.atomix.catalyst.transport.Address("localhost:11191");
 
         StoreServer srv = new StoreServer(store, address, "store");
         srv.objs.exportObject(Store.class, (Exportable) store);
@@ -49,7 +49,7 @@ public class StoreServer extends Server {
     }
 
     @Override
-    public void run(Address address, Transport t) {
+    public void run(io.atomix.catalyst.transport.Address address, Transport t) {
         tc.execute(()-> {
             System.out.println("Server ready on " + address.toString() + ".");
             t.server().listen(address, (c)-> {
@@ -77,7 +77,7 @@ public class StoreServer extends Server {
                     if (m.getContext() != null)
                         startTransaction((Exportable) store, m);
 
-                    Cart cart =  store.newCart();
+                    Cart cart = store.newCart();
                     Reference<Cart> ref = objs.exportObject(Cart.class, (Exportable) cart);
 
                     return Futures.completedFuture(new StoreMakeCartRep(ref));
@@ -201,7 +201,7 @@ public class StoreServer extends Server {
     private static Bank lookupBank() {
         ThreadContext tc = new SingleThreadContext("s-%d", new Serializer());
         Transport t = new NettyTransport();
-        Address addr = new Address("localhost:11192");
+        io.atomix.catalyst.transport.Address addr = new io.atomix.catalyst.transport.Address("localhost:11192");
         Reference<Bank> ref = new Reference<>(addr, 1, Bank.class);
         Connection c;
 
@@ -222,7 +222,7 @@ public class StoreServer extends Server {
         File account = new File("accountId");
         ThreadContext tc = new SingleThreadContext("s-%d", new Serializer());
         Transport t = new NettyTransport();
-        Address addr = new Address("localhost:11192");
+        io.atomix.catalyst.transport.Address addr = new io.atomix.catalyst.transport.Address("localhost:11192");
 
         try {
             if (account.exists()) {

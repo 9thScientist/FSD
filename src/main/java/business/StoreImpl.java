@@ -93,7 +93,10 @@ public class StoreImpl extends Exportable implements Store {
         }
 
         public Sale toSale() {
-            return new SaleImpl(wishes);
+            Sale s = new SaleImpl(wishes);
+            history.add(s);
+
+            return s;
         }
 
         private void setWishes(List<Book> wishes) {
