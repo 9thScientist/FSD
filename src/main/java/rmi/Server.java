@@ -1,7 +1,7 @@
 package rmi;
 
-import com.transactions.*;
 import com.Request;
+import com.transactions.*;
 import io.atomix.catalyst.concurrent.SingleThreadContext;
 import io.atomix.catalyst.concurrent.ThreadContext;
 import io.atomix.catalyst.serializer.Serializer;
@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public abstract class Server {
@@ -36,6 +37,12 @@ public abstract class Server {
 
         tc.serializer().register(ManagerAddResourceReq.class);
         tc.serializer().register(ManagerAddResourceRep.class);
+        tc.serializer().register(ManagerPreparedReq.class);
+        tc.serializer().register(ManagerPreparedRep.class);
+        tc.serializer().register(ManagerCommitReq.class);
+        tc.serializer().register(ManagerCommitRep.class);
+        tc.serializer().register(ManagerAbortReq.class);
+        tc.serializer().register(ManagerAbortRep.class);
         registerMessages(tc.serializer());
         registerLogHandlers(objs);
     }
@@ -46,6 +53,7 @@ public abstract class Server {
 
         if (request != null) {
             log.append(request);
+            System.out.println(request.getClass());
             backup(save);
         }
 
@@ -63,6 +71,7 @@ public abstract class Server {
 
             c.handler(ManagerAbortReq.class, (s, m) -> {
                log.append(m);
+                System.out.println(m);
                obj.unlock();
                Manager.setContext(null);
                rollback(save);
@@ -72,6 +81,7 @@ public abstract class Server {
             });
             c.handler(ManagerCommitReq.class, (s, m) -> {
                 log.append(m);
+                System.out.println(m);
                 obj.unlock();
                 Manager.setContext(null);
 
@@ -87,8 +97,9 @@ public abstract class Server {
         });
     }
 
-    public void recover() {
-        System.out.println("starting recoverng...");
+    public CompletableFuture<Void> recover() {
+        CompletableFuture<Void> r = new CompletableFuture<>();
+
         tc.execute(() -> {
             log.handler(ManagerPreparedReq.class, (id, prep) -> {
                 System.out.println("Found prepared");
@@ -104,26 +115,31 @@ public abstract class Server {
 
                 t.commit();
             });
-            for(Class<? extends Request> cls: handlers.keySet())
+            for(Class<? extends Request> cls: handlers.keySet()) {
                 log.handler(cls, (id, req) -> {
                     System.out.println("Found request: " + cls.getName());
                     int xid = req.getContext().getContextId();
                     Transaction t = logTransactions.get(xid);
 
-                    if(t == null) {
+                    if (t == null) {
                         t = new Transaction(req.getContext());
                         logTransactions.put(xid, t);
                     }
 
                     t.add(req);
                 });
+            }
 
-            log.open().thenRun(() -> {
-                logTransactions.values().stream()
-                        .filter(Transaction::isIncomplete)
-                        .forEach(Transaction::askManager);
-            });
+            System.out.println("Opening log");
+            log.open().thenRun(() -> r.complete(null));
+//                    .thenRun(() -> {
+//                logTransactions.values().stream()
+//                        .filter(Transaction::isIncomplete)
+//                        .forEach(Transaction::askManager);
+//            });
         });
+
+        return r;
     }
 
     protected abstract void backup(List<Object> save);

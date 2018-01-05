@@ -33,9 +33,7 @@ public class StoreServer extends Server {
         StoreServer srv = new StoreServer(store, address, "store");
         srv.objs.exportObject(Store.class, (Exportable) store);
 
-        srv.recover();
-        srv.start();
-        System.out.println("Server ready on " + address.toString() + ".");
+        srv.recover().thenRun(srv::start);
     }
 
     @Override
@@ -53,6 +51,7 @@ public class StoreServer extends Server {
     @Override
     public void run(Address address, Transport t) {
         tc.execute(()-> {
+            System.out.println("Server ready on " + address.toString() + ".");
             t.server().listen(address, (c)-> {
                 /*
                  * Store Handlers

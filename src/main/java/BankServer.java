@@ -24,9 +24,7 @@ public class BankServer extends Server {
         BankServer srv = new BankServer(bank, address, "bank");
         srv.objs.exportObject(Bank.class, (Exportable) bank);
 
-        srv.recover();
-        srv.start();
-        System.out.println("Server ready on " + address + ".");
+        srv.recover().thenRun(srv::start);
     }
 
     public void backup(List<Object> save) {
@@ -41,6 +39,7 @@ public class BankServer extends Server {
 
     public void run(Address address, Transport t) {
         tc.execute(()-> {
+            System.out.println("Server ready on " + address + ".");
             t.server().listen(address, (c)-> {
                 c.handler(BankMakeAccountReq.class, m -> {
                     Bank bank = (Bank) objs.get(m.getBankId());
